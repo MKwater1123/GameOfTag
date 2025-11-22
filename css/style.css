@@ -193,6 +193,8 @@ body {
     align-items: center;
     z-index: 1000;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 #game-timer {
@@ -211,6 +213,16 @@ body {
     font-weight: 700;
     font-size: 1em;
     letter-spacing: 1px;
+}
+
+.role-info {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #38ef7d;
+    background: rgba(56, 239, 125, 0.1);
+    padding: 4px 10px;
+    border-radius: 12px;
+    letter-spacing: 0.5px;
 }
 
 #area-status {
@@ -239,7 +251,7 @@ body {
     border-top: 1px solid #e0e0e0;
     z-index: 1000;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
 }

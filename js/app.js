@@ -137,14 +137,20 @@ function joinGame(role) {
 function initMapScreen() {
     // ステータスバー更新
     const roleDisplay = document.getElementById('role-display');
-    roleDisplay.textContent = currentUser.role === 'oni' ? '👹 鬼' : '🏃 逃走者';
-    roleDisplay.style.color = currentUser.role === 'oni' ? '#f5576c' : '#00f2fe';
+    const roleInfo = document.getElementById('role-info');
+    roleDisplay.textContent = currentUser.role === 'oni' ? '● 鬼' : '● 逃走者';
+    roleDisplay.style.color = currentUser.role === 'oni' ? '#ff3b30' : '#00e5ff';
 
-    // ボトムバー表示切替
-    if (currentUser.role === 'runner') {
-        document.getElementById('timer-display').classList.remove('hidden');
-    } else {
-        document.getElementById('update-display').classList.remove('hidden');
+    // 役割別情報表示を設定
+    if (roleInfo) {
+        roleInfo.classList.remove('hidden');
+        if (currentUser.role === 'runner') {
+            roleInfo.textContent = '次の送信: --:--';
+            roleInfo.id = 'runner-countdown-display';
+        } else if (currentUser.role === 'oni') {
+            roleInfo.textContent = '最終更新: --';
+            roleInfo.id = 'oni-update-display';
+        }
     }
 
     // 地図初期化
@@ -439,11 +445,11 @@ function updateFirebaseLocation(timestamp) {
 
 // 逃走者用カウントダウン更新
 function updateRunnerCountdown(seconds) {
-    const el = document.getElementById('countdown');
+    const el = document.getElementById('runner-countdown-display');
     if (!el) return;
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
-    el.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    el.textContent = `次の送信: ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 // ====================
@@ -614,9 +620,9 @@ function formatTime(timestamp) {
 }
 
 function updateLastUpdateDisplay(timestamp) {
-    const lastUpdateEl = document.getElementById('last-update');
+    const lastUpdateEl = document.getElementById('oni-update-display');
     if (lastUpdateEl) {
-        lastUpdateEl.textContent = formatTime(timestamp);
+        lastUpdateEl.textContent = `最終更新: ${formatTime(timestamp)}`;
     }
 }
 

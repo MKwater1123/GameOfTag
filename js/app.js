@@ -175,15 +175,18 @@ function initMap() {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // エリア円を描画
+    // エリア円を描画（半径500m）
     L.circle([GAME_SETTINGS.center_lat, GAME_SETTINGS.center_lng], {
-        color: 'red',
-        fillColor: '#f03',
-        fillOpacity: 0.1,
-        radius: GAME_SETTINGS.radius_meter
+        color: '#ff4b2b',
+        fillColor: '#ff4b2b',
+        fillOpacity: 0.15,
+        radius: GAME_SETTINGS.radius_meter,
+        weight: 3
     }).addTo(map);
 
-    console.log('Map initialized');
+    console.log('Map initialized with 500m radius circle');
+    console.log('Center:', GAME_SETTINGS.center_lat, GAME_SETTINGS.center_lng);
+    console.log('Radius:', GAME_SETTINGS.radius_meter, 'meters');
 }
 
 // ====================

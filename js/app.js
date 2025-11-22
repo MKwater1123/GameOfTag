@@ -34,20 +34,31 @@ let locationSendTimer = null;
 // ====================
 // 初期化
 // ====================
+console.log('🚀 GPS Tag アプリ起動');
+console.log('📅 読み込み時刻:', new Date().toLocaleString());
+
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('📄 DOM読み込み完了');
     initFirebase();
     setupLoginScreen();
 });
 
 function initFirebase() {
+    console.log('🔧 Firebase初期化開始...');
     // Firebase CDN使用時の初期化
-    if (typeof firebase !== 'undefined') {
-        firebase.initializeApp(firebaseConfig);
-        database = firebase.database();
-        playersRef = database.ref('game_session_v1/players');
-        console.log('Firebase initialized');
+    if (typeof window.firebase !== 'undefined') {
+        console.log('✅ Firebase CDN読み込み確認');
+        try {
+            window.firebase.initializeApp(firebaseConfig);
+            database = window.firebase.database();
+            playersRef = database.ref('game_session_v1/players');
+            console.log('✅ Firebase初期化成功');
+            console.log('📍 Database URL:', firebaseConfig.databaseURL);
+        } catch (error) {
+            console.error('❌ Firebase初期化エラー:', error);
+        }
     } else {
-        console.error('Firebase CDN not loaded. Add Firebase scripts to index.html');
+        console.error('❌ Firebase CDNが読み込まれていません');
     }
 }
 
@@ -82,14 +93,18 @@ function joinGame(role) {
     currentUser.role = role;
     currentUser.id = 'user_' + Date.now();
 
+    console.log('🎮 ゲーム参加:', {
+        username: username,
+        role: role,
+        id: currentUser.id
+    });
+
     // マップ画面へ遷移
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('map-screen').classList.remove('hidden');
 
     initMapScreen();
-}
-
-// ====================
+}// ====================
 // マップ画面初期化
 // ====================
 function initMapScreen() {
@@ -153,7 +168,9 @@ function initMap() {
 // 位置情報取得
 // ====================
 function startLocationTracking() {
+    console.log('📍 位置情報取得開始...');
     if (!navigator.geolocation) {
+        console.error('❌ Geolocation API利用不可');
         alert('このブラウザは位置情報に対応していません');
         return;
     }
@@ -163,6 +180,7 @@ function startLocationTracking() {
         (position) => {
             currentUser.lat = position.coords.latitude;
             currentUser.lng = position.coords.longitude;
+            console.log('📍 位置取得:', currentUser.lat.toFixed(6), currentUser.lng.toFixed(6));
 
             // 自分のマーカー更新
             updateSelfMarker();
@@ -174,8 +192,8 @@ function startLocationTracking() {
             sendLocationToFirebase();
         },
         (error) => {
-            console.error('位置情報取得エラー:', error);
-            alert('位置情報の取得に失敗しました');
+            console.error('❌ 位置情報取得エラー:', error.message);
+            alert('位置情報の取得に失敗しました: ' + error.message);
         },
         {
             enableHighAccuracy: true,

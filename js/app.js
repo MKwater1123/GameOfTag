@@ -17,6 +17,16 @@ let currentUser = {
 const ADMIN_PASSWORD = 'kotaro1123'; // 本番環境では変更してください
 let isAdmin = false;
 
+// ゲーム状態管理
+let gameState = {
+    status: 'waiting', // 'waiting', 'active', 'ended'
+    startTime: null,
+    endTime: null,
+    duration: 30 * 60 * 1000 // デフォルト: 30分
+};
+let gameStatusRef = null;
+let gameTimerInterval = null;
+
 // ゲーム設定（鹿児島高専を中心に半径1km）
 const GAME_SETTINGS = {
     center_lat: 31.731222,
@@ -56,8 +66,12 @@ function initFirebase() {
             window.firebase.initializeApp(firebaseConfig);
             database = window.firebase.database();
             playersRef = database.ref('game_session_v1/players');
+            gameStatusRef = database.ref('game_session_v1/game_status');
             console.log('✅ Firebase初期化成功');
             console.log('📍 Database URL:', firebaseConfig.databaseURL);
+
+            // ゲーム状態を監視
+            watchGameStatus();
         } catch (error) {
             console.error('❌ Firebase初期化エラー:', error);
         }
@@ -113,6 +127,9 @@ function joinGame(role) {
     document.getElementById('map-screen').classList.remove('hidden');
 
     initMapScreen();
+
+    // ゲーム状態をチェック
+    checkGameStatus();
 }// ====================
 // マップ画面初期化
 // ====================
@@ -132,22 +149,14 @@ function initMapScreen() {
     // 地図初期化
     initMap();
 
-    // 位置情報取得開始
+    // 位置情報取得開始（リアルタイム表示用）
     startLocationTracking();
 
     // Firebase監視開始
     watchPlayers();
 
-    // 鬼の場合、定期的に位置を送信
-    if (currentUser.role === 'oni') {
-        console.log('鬼モード: 5秒ごとに位置を送信開始');
-        locationSendTimer = setInterval(() => {
-            if (currentUser.lat && currentUser.lng) {
-                updateFirebaseLocation(Date.now());
-                console.log('鬼の位置を送信:', currentUser.lat, currentUser.lng);
-            }
-        }, 5000); // 5秒ごと
-    }
+    // 注：位置送信はゲーム開始後に開始
+    console.log('⚠️ ゲーム開始待機中...');
 }
 
 // ====================
@@ -488,6 +497,197 @@ function formatTime(timestamp) {
 }
 
 // ====================
+// ゲームステータス管理
+// ====================
+function watchGameStatus() {
+    gameStatusRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        console.log('📊 ゲームステータス更新:', data);
+
+        if (data) {
+            gameState.status = data.status;
+            gameState.startTime = data.startTime;
+            gameState.endTime = data.endTime;
+            gameState.duration = data.duration;
+
+            // ステータスに応じて処理
+            if (data.status === 'active') {
+                console.log('✅ ゲーム開始を検知');
+                startLocationSending();
+                updateGameTimer();
+            } else if (data.status === 'ended') {
+                console.log('🏁 ゲーム終了を検知');
+                stopLocationSending();
+                showGameEndMessage();
+            } else if (data.status === 'waiting') {
+                console.log('⏳ ゲーム待機中');
+                stopLocationSending();
+                showWaitingMessage();
+            }
+        }
+    });
+}
+
+function checkGameStatus() {
+    gameStatusRef.once('value')
+        .then((snapshot) => {
+            const data = snapshot.val();
+            console.log('🔍 現在のゲームステータス:', data);
+
+            if (data) {
+                gameState.status = data.status;
+                gameState.startTime = data.startTime;
+                gameState.endTime = data.endTime;
+                gameState.duration = data.duration;
+
+                if (data.status === 'active') {
+                    console.log('✅ ゲームは既に開始されています');
+                    startLocationSending();
+                    updateGameTimer();
+                } else if (data.status === 'ended') {
+                    console.log('🏁 ゲームは既に終了しています');
+                    showGameEndMessage();
+                } else {
+                    console.log('⏳ ゲーム開始待機中...');
+                    showWaitingMessage();
+                }
+            } else {
+                console.log('⚠️ ゲームステータスが未設定です');
+                showWaitingMessage();
+            }
+        })
+        .catch((error) => {
+            console.error('❌ ゲームステータス取得エラー:', error);
+        });
+}
+
+function startLocationSending() {
+    // 既に送信中の場合は何もしない
+    if (sendTimer) {
+        console.log('⚠️ 既に位置情報送信中です');
+        return;
+    }
+
+    console.log('📡 位置情報送信開始:', currentPlayer.role);
+
+    if (currentPlayer.role === 'oni') {
+        // 鬼は5秒ごとに位置情報を送信
+        sendLocationToFirebase(); // 即座に最初の送信
+        sendTimer = setInterval(() => {
+            sendLocationToFirebase();
+        }, 5000);
+        console.log('👹 鬼モード: 5秒ごとに位置情報を送信');
+    } else if (currentPlayer.role === 'runner') {
+        // 逃走者は30秒ごとに位置情報を送信
+        sendLocationToFirebase(); // 即座に最初の送信
+
+        let countdown = 30;
+        updateCountdown(countdown);
+
+        const countdownInterval = setInterval(() => {
+            countdown--;
+            updateCountdown(countdown);
+
+            if (countdown <= 0) {
+                countdown = 30;
+            }
+        }, 1000);
+
+        sendTimer = setInterval(() => {
+            sendLocationToFirebase();
+        }, 30000);
+
+        // タイマーIDを保存（終了時にクリアするため）
+        if (!window.gameTimers) {
+            window.gameTimers = [];
+        }
+        window.gameTimers.push(countdownInterval);
+
+        console.log('🏃 逃走者モード: 30秒ごとに位置情報を送信');
+    }
+}
+
+function stopLocationSending() {
+    if (sendTimer) {
+        clearInterval(sendTimer);
+        sendTimer = null;
+        console.log('🛑 位置情報送信を停止');
+    }
+
+    // カウントダウンタイマーも停止
+    if (window.gameTimers) {
+        window.gameTimers.forEach(timer => clearInterval(timer));
+        window.gameTimers = [];
+    }
+
+    // カウントダウン表示をリセット
+    const bottomBar = document.querySelector('.bottom-bar');
+    if (bottomBar) {
+        bottomBar.textContent = 'ゲーム終了';
+    }
+}
+
+function updateGameTimer() {
+    if (gameTimerInterval) {
+        clearInterval(gameTimerInterval);
+    }
+
+    const statusBar = document.querySelector('.status-bar');
+    if (!statusBar) return;
+
+    // タイマー表示要素を作成
+    let timerElement = document.getElementById('game-timer');
+    if (!timerElement) {
+        timerElement = document.createElement('div');
+        timerElement.id = 'game-timer';
+        timerElement.style.marginLeft = '10px';
+        timerElement.style.fontWeight = 'bold';
+        timerElement.style.color = '#ff6b6b';
+        statusBar.appendChild(timerElement);
+    }
+
+    gameTimerInterval = setInterval(() => {
+        const now = Date.now();
+        const remaining = gameState.endTime - now;
+
+        if (remaining <= 0) {
+            timerElement.textContent = '⏰ 時間切れ';
+            clearInterval(gameTimerInterval);
+            return;
+        }
+
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        timerElement.textContent = `⏰ 残り ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }, 1000);
+}
+
+function showWaitingMessage() {
+    const bottomBar = document.querySelector('.bottom-bar');
+    if (bottomBar) {
+        bottomBar.textContent = '⏳ ゲーム開始待機中...';
+        bottomBar.style.backgroundColor = '#ffa500';
+    }
+}
+
+function showGameEndMessage() {
+    const bottomBar = document.querySelector('.bottom-bar');
+    if (bottomBar) {
+        bottomBar.textContent = '🏁 ゲーム終了';
+        bottomBar.style.backgroundColor = '#888';
+    }
+
+    // タイマーをクリア
+    if (gameTimerInterval) {
+        clearInterval(gameTimerInterval);
+        const timerElement = document.getElementById('game-timer');
+        if (timerElement) {
+            timerElement.remove();
+        }
+    }
+}
+
+// ====================
 // 管理者機能
 // ====================
 function showAdminLogin() {
@@ -630,10 +830,20 @@ function kickPlayer(playerId) {
 }
 
 function startGame() {
-    database.ref('game_session_v1/status').set('active')
+    const duration = parseInt(document.getElementById('game-duration').value) || 30;
+    const durationMs = duration * 60 * 1000;
+
+    const gameData = {
+        status: 'active',
+        startTime: Date.now(),
+        endTime: Date.now() + durationMs,
+        duration: durationMs
+    };
+
+    gameStatusRef.set(gameData)
         .then(() => {
-            console.log('✅ ゲーム開始');
-            alert('ゲームを開始しました！');
+            console.log('✅ ゲーム開始:', gameData);
+            alert(`ゲームを開始しました！（${duration}分間）`);
         })
         .catch((error) => {
             console.error('❌ ゲーム開始エラー:', error);
@@ -643,7 +853,10 @@ function startGame() {
 function endGame() {
     if (!confirm('ゲームを終了しますか？')) return;
 
-    database.ref('game_session_v1/status').set('ended')
+    gameStatusRef.update({
+        status: 'ended',
+        endTime: Date.now()
+    })
         .then(() => {
             console.log('✅ ゲーム終了');
             alert('ゲームを終了しました');
@@ -651,9 +864,7 @@ function endGame() {
         .catch((error) => {
             console.error('❌ ゲーム終了エラー:', error);
         });
-}
-
-function clearAllPlayers() {
+} function clearAllPlayers() {
     if (!confirm('全プレイヤーのデータを削除しますか？この操作は取り消せません。')) return;
 
     playersRef.remove()

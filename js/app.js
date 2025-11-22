@@ -5,6 +5,7 @@ import { firebaseConfig } from './firebase-config.js';
 let map;
 let userMarker;
 let playerMarkers = {};
+let lastRunnerUpdateTime = 0; // 逃走者の最終更新時刻を記録
 let currentUser = {
     id: null,
     username: '',
@@ -332,14 +333,14 @@ function watchPlayers() {
         if (!players) return;
         Object.values(playerMarkers).forEach(m => m.remove());
         playerMarkers = {};
-        
+
         let latestRunnerUpdate = 0;
-        
+
         Object.entries(players).forEach(([playerId, playerData]) => {
             if (playerId === currentUser.id) return; // 自分は表示済み
             if (currentUser.role === 'runner' && playerData.role === 'oni') return; // 逃走者は鬼非表示
             addPlayerMarker(playerId, playerData);
-            
+
             // 鬼の場合、逃走者の最新更新時刻を追跡
             if (currentUser.role === 'oni' && playerData.role === 'runner') {
                 if (playerData.updated_at > latestRunnerUpdate) {
@@ -347,10 +348,14 @@ function watchPlayers() {
                 }
             }
         });
-        
-        // 鬼の場合、最終更新時刻を表示
+
+        // 鬼の場合、逃走者の更新時刻が変わったときだけ表示を更新
         if (currentUser.role === 'oni' && latestRunnerUpdate > 0) {
-            updateLastUpdateDisplay(latestRunnerUpdate);
+            if (latestRunnerUpdate > lastRunnerUpdateTime) {
+                lastRunnerUpdateTime = latestRunnerUpdate;
+                updateLastUpdateDisplay(latestRunnerUpdate);
+                console.log('Runner position updated at:', formatTime(latestRunnerUpdate));
+            }
         }
     }, (error) => console.error('Players watch error:', error));
 }

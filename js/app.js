@@ -29,6 +29,7 @@ let nextUpdateTime = null;
 // Firebase参照（CDN版を想定）
 let database;
 let playersRef;
+let locationSendTimer = null;
 
 // ====================
 // 初期化
@@ -112,6 +113,17 @@ function initMapScreen() {
 
     // Firebase監視開始
     watchPlayers();
+
+    // 鬼の場合、定期的に位置を送信
+    if (currentUser.role === 'oni') {
+        console.log('鬼モード: 5秒ごとに位置を送信開始');
+        locationSendTimer = setInterval(() => {
+            if (currentUser.lat && currentUser.lng) {
+                updateFirebaseLocation(Date.now());
+                console.log('鬼の位置を送信:', currentUser.lat, currentUser.lng);
+            }
+        }, 5000); // 5秒ごと
+    }
 }
 
 // ====================
@@ -255,28 +267,41 @@ function sendLocationToFirebase() {
 
     const now = Date.now();
 
-    // 鬼：常時送信
+    // 鬼：初回のみ送信（以降は定期タイマーで送信）
     if (currentUser.role === 'oni') {
-        updateFirebaseLocation(now);
+        if (!currentUser.lastSent) {
+            updateFirebaseLocation(now);
+            currentUser.lastSent = now;
+            console.log('鬼: 初回位置送信完了');
+        }
     }
-    // 逃走者：10分に1回
+    // 逃走者：30秒に1回
     else if (currentUser.role === 'runner') {
         if (!nextUpdateTime || now >= nextUpdateTime) {
             updateFirebaseLocation(now);
             nextUpdateTime = now + RUNNER_UPDATE_INTERVAL;
             startCountdown();
+            console.log('逃走者: 位置送信完了', currentUser.lat, currentUser.lng);
         }
     }
 }
 
 function updateFirebaseLocation(timestamp) {
-    playersRef.child(currentUser.id).set({
+    const data = {
         username: currentUser.username,
         role: currentUser.role,
         lat: currentUser.lat,
         lng: currentUser.lng,
         updated_at: timestamp
-    });
+    };
+
+    playersRef.child(currentUser.id).set(data)
+        .then(() => {
+            console.log('Firebase送信成功:', data);
+        })
+        .catch((error) => {
+            console.error('Firebase送信失敗:', error);
+        });
 }
 
 // ====================
@@ -308,7 +333,12 @@ function watchPlayers() {
 
     playersRef.on('value', (snapshot) => {
         const players = snapshot.val();
-        if (!players) return;
+        console.log('Firebase受信:', players);
+
+        if (!players) {
+            console.log('プレイヤーデータがありません');
+            return;
+        }
 
         // 既存マーカークリア
         Object.values(playerMarkers).forEach(marker => marker.remove());
@@ -319,9 +349,13 @@ function watchPlayers() {
             if (playerId === currentUser.id) return;
 
             // 逃走者の場合、鬼は表示しない
-            if (currentUser.role === 'runner' && playerData.role === 'oni') return;
+            if (currentUser.role === 'runner' && playerData.role === 'oni') {
+                console.log('逃走者モード: 鬼を非表示', playerData.username);
+                return;
+            }
 
             // マーカー追加
+            console.log('マーカー追加:', playerData.username, playerData.role);
             addPlayerMarker(playerId, playerData);
         });
     });

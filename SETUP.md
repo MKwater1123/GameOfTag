@@ -76,6 +76,27 @@
      appId: "1:123456789:web:abc..."
    };
    ```
+-コピー
+npm install firebase
+
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDvt2IjLb-Dxu5o_ZXzCV7J0dHylIBv2mI",
+  authDomain: "gameoftag-cc222.firebaseapp.com",
+  databaseURL: "https://gameoftag-cc222-default-rtdb.firebaseio.com",
+  projectId: "gameoftag-cc222",
+  storageBucket: "gameoftag-cc222.firebasestorage.app",
+  messagingSenderId: "619590664544",
+  appId: "1:619590664544:web:83ea984eeef0728ac8de05"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
 ### ステップ4: アプリに設定を反映
 

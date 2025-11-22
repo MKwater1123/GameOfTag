@@ -31,15 +31,15 @@ let gameStatusRef = null;
 let gameTimerInterval = null;
 let countdownInterval = null;
 
-// ゲーム設定（鹿児島高専を中心に半径1km）
+// ゲーム設定（鹿児島高専を中心に半径500m）
 const GAME_SETTINGS = {
     center_lat: 31.731222,
     center_lng: 130.728778,
-    radius_meter: 1000
+    radius_meter: 500
 };
 
 // 位置情報送信頻度（ミリ秒）
-const ONI_SEND_INTERVAL_MS = 5 * 1000;      // 鬼: 5秒ごと
+const ONI_SEND_INTERVAL_MS = 10 * 1000;      // 鬼: 10秒ごと
 const RUNNER_SEND_INTERVAL_MS = 30 * 1000;  // 逃走者: 30秒ごと（テスト用）
 // ※本番環境では RUNNER_SEND_INTERVAL_MS を 10 * 60 * 1000 (10分) に変更可能
 
@@ -48,6 +48,8 @@ let database;
 let playersRef;
 let sendTimer = null; // 位置送信用タイマー（鬼/逃走者共通）
 let watchId = null; // GPS監視ID
+let outsideTimer = null; // エリア外タイマー
+let outsideStartTime = null; // エリア外に出た時刻
 
 // ====================
 // 初期化
@@ -264,14 +266,33 @@ function checkGeofence() {
     const areaStatus = document.getElementById('area-status');
     const warning = document.getElementById('area-warning');
 
+    if (!areaStatus || !warning) {
+        console.error('エリア要素が見つかりません');
+        return;
+    }
+
     if (distance > GAME_SETTINGS.radius_meter) {
         // エリア外
         areaStatus.textContent = 'エリア外';
         areaStatus.classList.add('outside');
-        warning.classList.remove('hidden');
 
-        // バイブレーション
-        if (navigator.vibrate) {
+        // 警告表示を更新（残り時間を表示）
+        if (!outsideStartTime) {
+            outsideStartTime = Date.now();
+            console.log('[エリア外] タイマー開始', new Date().toLocaleTimeString());
+
+            // 1秒ごとに警告メッセージを更新するインターバルを開始
+            if (outsideTimer) {
+                clearInterval(outsideTimer);
+            }
+            outsideTimer = setInterval(updateOutsideWarning, 1000);
+        }
+
+        // 即座に警告を表示
+        updateOutsideWarning();
+
+        // バイブレーション（最初だけ）
+        if (navigator.vibrate && Date.now() - outsideStartTime < 500) {
             navigator.vibrate([200, 100, 200]);
         }
     } else {
@@ -279,7 +300,93 @@ function checkGeofence() {
         areaStatus.textContent = 'エリア内';
         areaStatus.classList.remove('outside');
         warning.classList.add('hidden');
+        warning.textContent = '警告：エリア外';
+
+        // エリア外タイマーをリセット
+        if (outsideStartTime) {
+            console.log('[エリア内] タイマーリセット', new Date().toLocaleTimeString());
+            outsideStartTime = null;
+
+            if (outsideTimer) {
+                clearInterval(outsideTimer);
+                outsideTimer = null;
+            }
+        }
     }
+}
+
+// エリア外警告メッセージを更新
+function updateOutsideWarning() {
+    if (!outsideStartTime) return;
+
+    const warning = document.getElementById('area-warning');
+    if (!warning) return;
+
+    const elapsedSeconds = Math.floor((Date.now() - outsideStartTime) / 1000);
+    const remainingSeconds = 30 - elapsedSeconds;
+
+    console.log(`[警告更新] 経過: ${elapsedSeconds}秒, 残り: ${remainingSeconds}秒`);
+
+    if (remainingSeconds > 0) {
+        warning.textContent = `⚠️ エリア外 (失格まであと ${remainingSeconds}秒)`;
+        warning.classList.remove('hidden');
+    } else {
+        // 30秒経過で失格
+        if (outsideTimer) {
+            clearInterval(outsideTimer);
+            outsideTimer = null;
+        }
+        disqualifyPlayer();
+    }
+}
+
+// 失格処理
+function disqualifyPlayer() {
+    console.log('[失格] エリア外30秒経過により失格');
+
+    // フラグを設定
+    currentUser.disqualified = true;
+
+    // 位置送信を停止
+    if (sendTimer) {
+        clearInterval(sendTimer);
+        sendTimer = null;
+    }
+
+    // GPS監視を停止
+    if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+    }
+
+    // エリア外タイマーを停止
+    if (outsideTimer) {
+        clearInterval(outsideTimer);
+        outsideTimer = null;
+    }
+
+    // Firebase監視を停止
+    if (playersRef) {
+        playersRef.off();
+    }
+
+    // Firebaseに失格情報を記録
+    if (playersRef && currentUser.id) {
+        playersRef.child(currentUser.id).update({
+            disqualified: true,
+            disqualifiedReason: 'out_of_area',
+            disqualifiedAt: Date.now()
+        }).then(() => {
+            console.log('✅ 失格情報をFirebaseに記録しました');
+        }).catch(error => {
+            console.error('失格情報の記録エラー:', error);
+        });
+    }
+
+    // 失格画面を表示
+    console.log('失格画面に遷移します...');
+    document.getElementById('map-screen').classList.add('hidden');
+    document.getElementById('disqualified-screen').classList.remove('hidden');
 }
 
 // 2点間の距離計算（メートル）
@@ -853,6 +960,7 @@ function showGameEndMessage() {
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('map-screen').classList.add('hidden');
     document.getElementById('captured-screen').classList.add('hidden');
+    document.getElementById('disqualified-screen').classList.add('hidden');
     document.getElementById('admin-screen').classList.add('hidden');
     document.getElementById('game-end-screen').classList.remove('hidden');
 }
@@ -860,16 +968,20 @@ function showGameEndMessage() {
 function displayGameResults(players) {
     const winnersList = document.getElementById('winners-list');
     const capturedList = document.getElementById('captured-list');
+    const disqualifiedList = document.getElementById('disqualified-list');
 
-    if (!winnersList || !capturedList) return;
+    if (!winnersList || !capturedList || !disqualifiedList) return;
 
     const winners = [];
     const captured = [];
+    const disqualified = [];
 
     if (players) {
         Object.entries(players).forEach(([playerId, playerData]) => {
             if (playerData.role === 'runner') {
-                if (playerData.captured) {
+                if (playerData.disqualified) {
+                    disqualified.push(playerData.username);
+                } else if (playerData.captured) {
                     captured.push(playerData.username);
                 } else {
                     winners.push(playerData.username);
@@ -892,7 +1004,14 @@ function displayGameResults(players) {
         capturedList.innerHTML = '<p class="no-players">確保されたプレイヤーなし</p>';
     }
 
-    console.log(`逃走成功: ${winners.length}人, 確保: ${captured.length}人`);
+    // 失格者を表示
+    if (disqualified.length > 0) {
+        disqualifiedList.innerHTML = disqualified.map(name => `<li>${name}</li>`).join('');
+    } else {
+        disqualifiedList.innerHTML = '<p class="no-players">失格者なし</p>';
+    }
+
+    console.log(`逃走成功: ${winners.length}人, 確保: ${captured.length}人, 失格: ${disqualified.length}人`);
 }
 
 // ====================

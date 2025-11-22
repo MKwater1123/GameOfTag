@@ -86,6 +86,15 @@
         </div>
     </div>
 
+    <!-- 失格画面 -->
+    <div id="disqualified-screen" class="screen hidden">
+        <div class="container">
+            <h1 class="title disqualified-title">失格</h1>
+            <p class="disqualified-message">エリア外に30秒以上滞在しました</p>
+            <p class="subtitle">ゲームが終了するまでお待ちください</p>
+        </div>
+    </div>
+
     <!-- ゲーム終了画面 -->
     <div id="game-end-screen" class="screen hidden">
         <div class="container">
@@ -98,6 +107,10 @@
                 <div class="result-section">
                     <h2>確保済み</h2>
                     <div id="captured-list" class="captured-list"></div>
+                </div>
+                <div class="result-section">
+                    <h2>失格</h2>
+                    <div id="disqualified-list" class="disqualified-list"></div>
                 </div>
             </div>
             <p class="subtitle">お疲れ様でした！</p>

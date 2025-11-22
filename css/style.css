@@ -466,6 +466,30 @@ body {
     justify-content: center;
 }
 
+/* 失格画面 */
+#disqualified-screen {
+    background: linear-gradient(135deg, #434343 0%, #000000 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.disqualified-title {
+    font-size: 2.2em;
+    margin-bottom: 1rem;
+    animation: shake 0.5s;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #ff4b2b;
+}
+
+.disqualified-message {
+    font-size: 1.2em;
+    margin: 1rem 0;
+    font-weight: 500;
+}
+
 .captured-title {
     font-size: 2.2em;
     margin-bottom: 1rem;

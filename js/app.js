@@ -15,8 +15,8 @@ let currentUser = {
 
 // ゲーム設定（鹿児島高専を中心に半径1km）
 const GAME_SETTINGS = {
-    center_lat: 31.5475,
-    center_lng: 130.5575,
+    center_lat: 31.731222,
+    center_lng: 130.728778,
     radius_meter: 1000
 };
 

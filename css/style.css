@@ -292,7 +292,6 @@ body {
     font-size: 1em;
     z-index: 2000;
     box-shadow: 0 5px 20px rgba(255, 75, 43, 0.5);
-    animation: shake 0.5s infinite;
     letter-spacing: 1px;
 }
 
@@ -488,6 +487,7 @@ body {
     font-size: 1.2em;
     margin: 1rem 0;
     font-weight: 500;
+    color: #000;
 }
 
 .captured-title {

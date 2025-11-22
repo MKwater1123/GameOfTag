@@ -1214,7 +1214,9 @@ function endGame() {
         .catch((error) => {
             console.error('❌ ゲーム終了エラー:', error);
         });
-} function clearAllPlayers() {
+}
+
+function clearAllPlayers() {
     if (!confirm('全プレイヤーのデータを削除しますか？この操作は取り消せません。')) return;
 
     playersRef.remove()

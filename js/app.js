@@ -332,11 +332,26 @@ function watchPlayers() {
         if (!players) return;
         Object.values(playerMarkers).forEach(m => m.remove());
         playerMarkers = {};
+        
+        let latestRunnerUpdate = 0;
+        
         Object.entries(players).forEach(([playerId, playerData]) => {
             if (playerId === currentUser.id) return; // 自分は表示済み
             if (currentUser.role === 'runner' && playerData.role === 'oni') return; // 逃走者は鬼非表示
             addPlayerMarker(playerId, playerData);
+            
+            // 鬼の場合、逃走者の最新更新時刻を追跡
+            if (currentUser.role === 'oni' && playerData.role === 'runner') {
+                if (playerData.updated_at > latestRunnerUpdate) {
+                    latestRunnerUpdate = playerData.updated_at;
+                }
+            }
         });
+        
+        // 鬼の場合、最終更新時刻を表示
+        if (currentUser.role === 'oni' && latestRunnerUpdate > 0) {
+            updateLastUpdateDisplay(latestRunnerUpdate);
+        }
     }, (error) => console.error('Players watch error:', error));
 }
 
@@ -384,7 +399,14 @@ function addPlayerMarker(playerId, playerData) {
 
 function formatTime(timestamp) {
     const date = new Date(timestamp);
-    return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+    return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+}
+
+function updateLastUpdateDisplay(timestamp) {
+    const lastUpdateEl = document.getElementById('last-update');
+    if (lastUpdateEl) {
+        lastUpdateEl.textContent = formatTime(timestamp);
+    }
 }
 
 // ====================
@@ -449,36 +471,36 @@ function startLocationSending() {
         const now = Date.now();
         const elapsed = now - gameState.startTime;
         const intervalMs = RUNNER_SEND_INTERVAL_MS;
-        
+
         // 次の送信タイミングまでの残り時間を計算
         const nextSendIn = intervalMs - (elapsed % intervalMs);
         let countdown = Math.ceil(nextSendIn / 1000);
-        
+
         console.log(`Runner sync: elapsed=${elapsed}ms, next send in ${countdown}s`);
-        
+
         updateRunnerCountdown(countdown);
-        
+
         // カウントダウン更新
         const countdownInterval = setInterval(() => {
             const now = Date.now();
             const elapsed = now - gameState.startTime;
             const remaining = Math.ceil((intervalMs - (elapsed % intervalMs)) / 1000);
-            
+
             if (remaining <= 0 || remaining > intervalMs / 1000) {
                 updateRunnerCountdown(intervalMs / 1000);
             } else {
                 updateRunnerCountdown(remaining);
             }
         }, 1000);
-        
+
         if (!window.gameTimers) window.gameTimers = [];
         window.gameTimers.push(countdownInterval);
-        
+
         // 初回送信（ゲーム開始直後なら送信）
         if (elapsed < 1000) {
             sendLocationToFirebase();
         }
-        
+
         // 次の同期タイミングで送信を開始
         setTimeout(() => {
             sendLocationToFirebase();

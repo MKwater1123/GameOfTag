@@ -159,6 +159,12 @@ function initMapScreen() {
     // 参加者リストボタンのセットアップ
     setupPlayerListButton();
 
+    // イベントエリアのセットアップ
+    setupEventArea();
+
+    // テスト用イベント追加
+    addEvent('ゲームに参加しました', 'normal');
+
     // 注：位置送信はゲーム開始後に開始
     console.log('Waiting for game start...');
 }
@@ -458,6 +464,10 @@ function watchPlayers() {
             console.log('🚨 確保を検知しました！', players[currentUser.id]);
             currentUser.captured = true;
             currentUser.capturedBy = players[currentUser.id].capturedBy;
+
+            // イベントを追加
+            addEvent(`${currentUser.capturedBy}に確保されました`, 'important');
+
             showCapturedScreen();
             return;
         }
@@ -583,6 +593,10 @@ window.capturePlayer = function (playerId, username) {
     }).then(() => {
         console.log(`✅ ${username} を確保しました`);
         alert(`${username} を確保しました！`);
+
+        // イベントを追加
+        addEvent(`${currentUser.username}が${username}を確保しました`, 'important');
+
         // マーカーを削除
         if (playerMarkers[playerId]) {
             playerMarkers[playerId].remove();
@@ -1219,17 +1233,120 @@ function endGame() {
 function clearAllPlayers() {
     if (!confirm('全プレイヤーのデータを削除しますか？この操作は取り消せません。')) return;
 
-    playersRef.remove()
+    console.log('🗑️ プレイヤーデータのクリアを開始...');
+
+    if (!isAdmin) {
+        alert('エラー: 管理者権限が必要です');
+        return;
+    }
+
+    if (!playersRef) {
+        console.error('❌ playersRef が未初期化です');
+        alert('エラー: データベース接続が確立されていません');
+        return;
+    }
+
+    // 各プレイヤーを個別に削除
+    playersRef.once('value')
+        .then((snapshot) => {
+            const players = snapshot.val();
+            if (!players) {
+                console.log('削除するプレイヤーがいません');
+                alert('プレイヤーがいません');
+                return;
+            }
+
+            const deletePromises = Object.keys(players).map(playerId =>
+                playersRef.child(playerId).remove()
+            );
+
+            return Promise.all(deletePromises);
+        })
         .then(() => {
-            console.log('✅ 全プレイヤーをクリア');
+            console.log('✅ 全プレイヤーをクリア成功');
             alert('全プレイヤーをクリアしました');
         })
         .catch((error) => {
             console.error('❌ プレイヤークリアエラー:', error);
-            alert('クリアに失敗しました');
+            console.error('エラー詳細:', error.code, error.message);
+            alert('クリアに失敗しました: ' + error.message + '\n\nFirebaseのセキュリティルールを確認してください。');
         });
+}
+
+// ====================
+// イベントシステム
+// ====================
+let eventList = [];
+
+function setupEventArea() {
+    const eventHeader = document.querySelector('.event-header');
+    const eventToggle = document.getElementById('event-toggle');
+    const eventContent = document.getElementById('event-content');
+
+    if (eventHeader && eventToggle && eventContent) {
+        eventHeader.addEventListener('click', () => {
+            eventContent.classList.toggle('collapsed');
+            eventToggle.classList.toggle('collapsed');
+        });
+
+        console.log('✅ イベントエリアを初期化しました');
+    }
+}
+
+// イベントを追加
+function addEvent(message, type = 'normal') {
+    const timestamp = Date.now();
+    const event = {
+        id: timestamp,
+        message: message,
+        type: type, // 'normal' or 'important'
+        time: new Date(timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    };
+
+    eventList.unshift(event); // 新しいイベントを先頭に追加
+
+    // 最大50件まで保持
+    if (eventList.length > 50) {
+        eventList = eventList.slice(0, 50);
+    }
+
+    updateEventDisplay();
+    console.log('📢 イベント追加:', message);
+}
+
+// イベント表示を更新
+function updateEventDisplay() {
+    const eventListEl = document.getElementById('event-list');
+    if (!eventListEl) return;
+
+    if (eventList.length === 0) {
+        eventListEl.innerHTML = '<p class="no-events">イベントはありません</p>';
+        return;
+    }
+
+    let html = '';
+    eventList.forEach(event => {
+        const importantClass = event.type === 'important' ? ' important' : '';
+        html += `
+            <div class="event-item${importantClass}">
+                <div class="event-item-time">${event.time}</div>
+                <div class="event-item-message">${event.message}</div>
+            </div>
+        `;
+    });
+
+    eventListEl.innerHTML = html;
+}
+
+// イベントをクリア
+function clearEvents() {
+    eventList = [];
+    updateEventDisplay();
+    console.log('🗑️ イベントをクリアしました');
 }
 
 // グローバルスコープに公開（HTML内のonclick用）
 window.kickPlayer = kickPlayer;
+window.addEvent = addEvent;
+window.clearEvents = clearEvents;
 

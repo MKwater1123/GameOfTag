@@ -311,6 +311,125 @@ body {
     }
 }
 
+/* イベントエリア */
+.event-area {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(26, 26, 46, 0.98);
+    z-index: 1500;
+    border-top: 2px solid #38ef7d;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+}
+
+.event-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    cursor: pointer;
+    user-select: none;
+}
+
+.event-title {
+    color: #38ef7d;
+    font-weight: 700;
+    font-size: 1em;
+    letter-spacing: 1px;
+}
+
+.event-toggle-btn {
+    background: none;
+    border: none;
+    color: #38ef7d;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: transform 0.3s;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.event-toggle-btn.collapsed {
+    transform: rotate(-90deg);
+}
+
+.event-content {
+    max-height: 200px;
+    overflow-y: auto;
+    transition: max-height 0.3s ease;
+}
+
+.event-content.collapsed {
+    max-height: 0;
+    overflow: hidden;
+}
+
+.event-list {
+    padding: 10px 15px;
+}
+
+.event-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 3px solid #38ef7d;
+    padding: 10px 12px;
+    margin: 8px 0;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.9em;
+    animation: slideIn 0.3s ease;
+}
+
+.event-item.important {
+    border-left-color: #ff4b2b;
+    background: rgba(255, 75, 43, 0.1);
+}
+
+.event-item-time {
+    color: #38ef7d;
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.event-item-message {
+    color: #e0e0e0;
+    line-height: 1.4;
+}
+
+.no-events {
+    color: #666;
+    text-align: center;
+    padding: 20px;
+    font-size: 0.9em;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* 地図エリアをイベントエリアの分だけ調整 */
+#map {
+    flex: 1;
+    width: 100%;
+    padding-bottom: 54px;
+    /* イベントヘッダーの高さ分 */
+}
+
 /* 参加者リストパネル */
 .player-list-panel {
     position: fixed;

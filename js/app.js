@@ -26,6 +26,7 @@ let gameState = {
 };
 let gameStatusRef = null;
 let gameTimerInterval = null;
+let countdownInterval = null;
 
 // ゲーム設定（鹿児島高専を中心に半径1km）
 const GAME_SETTINGS = {
@@ -533,39 +534,46 @@ function showCountdownScreen(countdownStart) {
     const message = document.getElementById('waiting-message');
     const countdownDisplay = document.getElementById('countdown-display');
     const countdownNumber = document.getElementById('countdown-number');
-    
+
     if (!overlay) return;
-    
+
+    // 既存のカウントダウンをクリア
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+
     overlay.classList.remove('hidden');
     title.textContent = '🎮 まもなくゲーム開始！';
     message.classList.add('hidden');
     countdownDisplay.classList.remove('hidden');
-    
+
     const updateCountdown = () => {
         const now = Date.now();
         const elapsed = Math.floor((now - countdownStart) / 1000);
         const remaining = 10 - elapsed;
-        
+
         if (remaining > 0) {
             countdownNumber.textContent = remaining;
-        } else {
+        } else if (remaining === 0) {
             countdownNumber.textContent = 'START!';
         }
     };
-    
+
     updateCountdown();
-    const interval = setInterval(updateCountdown, 100);
-    
-    // 10秒後にクリア
-    setTimeout(() => {
-        clearInterval(interval);
-    }, 11000);
+    countdownInterval = setInterval(updateCountdown, 100);
 }
 
 function hideWaitingOverlay() {
     const overlay = document.getElementById('waiting-overlay');
     if (overlay) {
         overlay.classList.add('hidden');
+    }
+    
+    // カウントダウンインターバルをクリア
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
     }
 }
 

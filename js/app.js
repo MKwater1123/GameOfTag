@@ -347,14 +347,29 @@ function startCountdown() {
 // 他プレイヤー監視
 // ====================
 function watchPlayers() {
+    console.log('🔍 watchPlayers関数呼び出し');
+    console.log('playersRef状態:', playersRef ? '✅初期化済み' : '❌未初期化');
+    console.log('database状態:', database ? '✅初期化済み' : '❌未初期化');
+
     if (!playersRef) {
         console.error('❌ playersRefが初期化されていません');
-        return;
+        console.error('再初期化を試みます...');
+
+        // 再初期化を試みる
+        if (database) {
+            playersRef = database.ref('game_session_v1/players');
+            console.log('✅ playersRefを再初期化しました');
+        } else {
+            console.error('❌ databaseがないため再初期化できません');
+            return;
+        }
     }
 
     console.log('👀 Firebaseのプレイヤーデータ監視開始');
+    console.log('Firebaseパス:', 'game_session_v1/players');
 
     playersRef.on('value', (snapshot) => {
+        console.log('📡 Firebaseイベント発火！');
         const players = snapshot.val();
         console.log('📬 Firebase受信:', players);
         console.log('📊 プレイヤー数:', players ? Object.keys(players).length : 0);
@@ -402,6 +417,8 @@ function watchPlayers() {
         });
 
         console.log('🎯 マーカー更新完了: 追加', addedCount, '個 / スキップ', skippedCount, '個');
+    }, (error) => {
+        console.error('❌ Firebase監視エラー:', error);
     });
 }
 

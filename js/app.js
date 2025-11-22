@@ -207,8 +207,8 @@ function updateSelfMarker() {
     if (!map || !currentUser.lat) return;
 
     if (!userMarker) {
-        // 緑色アイコン（自分）
-        const greenIcon = L.icon({
+        // 自分は常に緑色
+        const selfIcon = L.icon({
             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
             iconSize: [25, 41],
@@ -217,11 +217,12 @@ function updateSelfMarker() {
             shadowSize: [41, 41]
         });
 
-        userMarker = L.marker([currentUser.lat, currentUser.lng], { icon: greenIcon })
+        userMarker = L.marker([currentUser.lat, currentUser.lng], { icon: selfIcon })
             .addTo(map)
-            .bindPopup(`<b>${currentUser.username}</b><br>${currentUser.role === 'oni' ? '鬼' : '逃走者'}`);
+            .bindPopup(`<b>🟢 ${currentUser.username} (自分)</b><br>${currentUser.role === 'oni' ? '鬼' : '逃走者'}`);
 
         map.setView([currentUser.lat, currentUser.lng], 15);
+        console.log('🟢 自分のマーカー作成: 緑色');
     } else {
         userMarker.setLatLng([currentUser.lat, currentUser.lng]);
     }
@@ -450,6 +451,8 @@ function addPlayerMarker(playerId, playerData) {
             ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png'
             : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png';
 
+        const colorEmoji = role === 'oni' ? '🔴' : '🔵';
+
         const icon = L.icon({
             iconUrl: colorUrl,
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -461,10 +464,10 @@ function addPlayerMarker(playerId, playerData) {
 
         const marker = L.marker([lat, lng], { icon })
             .addTo(map)
-            .bindPopup(`<b>${username}</b><br>${role === 'oni' ? '鬼' : '逃走者'}<br>更新: ${formatTime(updated_at)}`);
+            .bindPopup(`<b>${colorEmoji} ${username}</b><br>${role === 'oni' ? '鬼' : '逃走者'}<br>更新: ${formatTime(updated_at)}`);
 
         playerMarkers[playerId] = marker;
-        console.log('✅ マーカー追加成功:', username, '位置:', lat.toFixed(6), lng.toFixed(6));
+        console.log(`✅ マーカー追加成功 ${colorEmoji}:`, username, 'role:', role, '位置:', lat.toFixed(6), lng.toFixed(6));
     } catch (error) {
         console.error('❌ マーカー追加エラー:', error);
     }

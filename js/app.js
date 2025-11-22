@@ -347,60 +347,110 @@ function startCountdown() {
 // 他プレイヤー監視
 // ====================
 function watchPlayers() {
-    if (!playersRef) return;
+    if (!playersRef) {
+        console.error('❌ playersRefが初期化されていません');
+        return;
+    }
+
+    console.log('👀 Firebaseのプレイヤーデータ監視開始');
 
     playersRef.on('value', (snapshot) => {
         const players = snapshot.val();
-        console.log('Firebase受信:', players);
+        console.log('📬 Firebase受信:', players);
+        console.log('📊 プレイヤー数:', players ? Object.keys(players).length : 0);
 
         if (!players) {
-            console.log('プレイヤーデータがありません');
+            console.log('⚠️ プレイヤーデータがありません');
             return;
         }
 
         // 既存マーカークリア
+        const oldMarkerCount = Object.keys(playerMarkers).length;
         Object.values(playerMarkers).forEach(marker => marker.remove());
         playerMarkers = {};
+        console.log('🧹 既存マーカーを削除:', oldMarkerCount, '個');
+
+        let addedCount = 0;
+        let skippedCount = 0;
 
         Object.entries(players).forEach(([playerId, playerData]) => {
+            console.log('🔍 プレイヤーチェック:', {
+                playerId,
+                username: playerData.username,
+                role: playerData.role,
+                自分: playerId === currentUser.id,
+                自分のID: currentUser.id
+            });
+
             // 自分は除外
-            if (playerId === currentUser.id) return;
+            if (playerId === currentUser.id) {
+                console.log('⏭️ 自分なのでスキップ');
+                skippedCount++;
+                return;
+            }
 
             // 逃走者の場合、鬼は表示しない
             if (currentUser.role === 'runner' && playerData.role === 'oni') {
-                console.log('逃走者モード: 鬼を非表示', playerData.username);
+                console.log('🏃 逃走者モード: 鬼を非表示', playerData.username);
+                skippedCount++;
                 return;
             }
 
             // マーカー追加
-            console.log('マーカー追加:', playerData.username, playerData.role);
             addPlayerMarker(playerId, playerData);
+            addedCount++;
         });
+
+        console.log('🎯 マーカー更新完了: 追加', addedCount, '個 / スキップ', skippedCount, '個');
     });
 }
 
 function addPlayerMarker(playerId, playerData) {
     const { username, role, lat, lng, updated_at } = playerData;
 
-    // アイコン色選択
-    const colorUrl = role === 'oni'
-        ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png'
-        : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png';
-
-    const icon = L.icon({
-        iconUrl: colorUrl,
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
+    console.log('📍 マーカー追加試行:', {
+        playerId,
+        username,
+        role,
+        lat,
+        lng,
+        map初期化: map ? '✅' : '❌'
     });
 
-    const marker = L.marker([lat, lng], { icon })
-        .addTo(map)
-        .bindPopup(`<b>${username}</b><br>${role === 'oni' ? '鬼' : '逃走者'}<br>更新: ${formatTime(updated_at)}`);
+    if (!map) {
+        console.error('❌ 地図が初期化されていません');
+        return;
+    }
 
-    playerMarkers[playerId] = marker;
+    if (!lat || !lng) {
+        console.error('❌ 無効な位置情報:', { lat, lng });
+        return;
+    }
+
+    try {
+        // アイコン色選択
+        const colorUrl = role === 'oni'
+            ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png'
+            : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png';
+
+        const icon = L.icon({
+            iconUrl: colorUrl,
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        const marker = L.marker([lat, lng], { icon })
+            .addTo(map)
+            .bindPopup(`<b>${username}</b><br>${role === 'oni' ? '鬼' : '逃走者'}<br>更新: ${formatTime(updated_at)}`);
+
+        playerMarkers[playerId] = marker;
+        console.log('✅ マーカー追加成功:', username, '位置:', lat.toFixed(6), lng.toFixed(6));
+    } catch (error) {
+        console.error('❌ マーカー追加エラー:', error);
+    }
 }
 
 function formatTime(timestamp) {

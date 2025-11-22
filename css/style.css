@@ -242,6 +242,37 @@ body {
 #map {
     flex: 1;
     width: 100%;
+    position: relative;
+}
+
+/* 地図内の参加者ボタン */
+.player-list-button-map {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: white;
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 1.5em;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.player-list-button-map:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+.player-list-button-map:active {
+    transform: scale(0.95);
 }
 
 #bottom-bar {

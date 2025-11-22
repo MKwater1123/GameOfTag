@@ -719,25 +719,42 @@ function updateGameTimer() {
     }
 
     const timerElement = document.getElementById('game-timer');
-    if (!timerElement) return;
+    if (!timerElement) {
+        console.error('❌ game-timer要素が見つかりません');
+        return;
+    }
+
+    if (!gameState.endTime) {
+        console.error('❌ gameState.endTimeが設定されていません');
+        return;
+    }
+
+    console.log('⏰ ゲームタイマー開始:', new Date(gameState.endTime).toLocaleString());
 
     // タイマーを表示
     timerElement.classList.remove('hidden');
 
-    gameTimerInterval = setInterval(() => {
+    // 初回表示
+    const updateTimer = () => {
         const now = Date.now();
         const remaining = gameState.endTime - now;
 
         if (remaining <= 0) {
             timerElement.textContent = '⏰ 時間切れ';
-            clearInterval(gameTimerInterval);
+            if (gameTimerInterval) {
+                clearInterval(gameTimerInterval);
+                gameTimerInterval = null;
+            }
             return;
         }
 
         const minutes = Math.floor(remaining / 60000);
         const seconds = Math.floor((remaining % 60000) / 1000);
         timerElement.textContent = `⏰ 残り ${minutes}:${seconds.toString().padStart(2, '0')}`;
-    }, 1000);
+    };
+
+    updateTimer(); // 初回実行
+    gameTimerInterval = setInterval(updateTimer, 1000);
 }
 
 function showWaitingMessage() {

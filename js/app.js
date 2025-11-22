@@ -21,7 +21,8 @@ const GAME_SETTINGS = {
 };
 
 // 逃走者の位置送信間隔（ミリ秒）
-const RUNNER_UPDATE_INTERVAL = 10 * 60 * 1000; // 10分
+// const RUNNER_UPDATE_INTERVAL = 10 * 60 * 1000; // 10分
+const RUNNER_UPDATE_INTERVAL = 30 * 1000; // 30秒（テスト用）
 let updateTimer = null;
 let nextUpdateTime = null;
 

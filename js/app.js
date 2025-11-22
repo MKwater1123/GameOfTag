@@ -44,6 +44,7 @@ let nextUpdateTime = null;
 let database;
 let playersRef;
 let locationSendTimer = null;
+let sendTimer = null;
 
 // ====================
 // 初期化
@@ -568,16 +569,16 @@ function startLocationSending() {
         return;
     }
 
-    console.log('📡 位置情報送信開始:', currentPlayer.role);
+    console.log('📡 位置情報送信開始:', currentUser.role);
 
-    if (currentPlayer.role === 'oni') {
+    if (currentUser.role === 'oni') {
         // 鬼は5秒ごとに位置情報を送信
         sendLocationToFirebase(); // 即座に最初の送信
         sendTimer = setInterval(() => {
             sendLocationToFirebase();
         }, 5000);
         console.log('👹 鬼モード: 5秒ごとに位置情報を送信');
-    } else if (currentPlayer.role === 'runner') {
+    } else if (currentUser.role === 'runner') {
         // 逃走者は30秒ごとに位置情報を送信
         sendLocationToFirebase(); // 即座に最初の送信
 

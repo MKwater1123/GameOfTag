@@ -445,20 +445,46 @@ function startLocationSending() {
         sendLocationToFirebase();
         sendTimer = setInterval(() => sendLocationToFirebase(), ONI_SEND_INTERVAL_MS);
     } else if (currentUser.role === 'runner') {
-        let countdown = RUNNER_SEND_INTERVAL_MS / 1000;
+        // ゲーム開始時刻からの経過時間を計算して同期
+        const now = Date.now();
+        const elapsed = now - gameState.startTime;
+        const intervalMs = RUNNER_SEND_INTERVAL_MS;
+        
+        // 次の送信タイミングまでの残り時間を計算
+        const nextSendIn = intervalMs - (elapsed % intervalMs);
+        let countdown = Math.ceil(nextSendIn / 1000);
+        
+        console.log(`Runner sync: elapsed=${elapsed}ms, next send in ${countdown}s`);
+        
         updateRunnerCountdown(countdown);
+        
+        // カウントダウン更新
         const countdownInterval = setInterval(() => {
-            countdown--;
-            if (countdown <= 0) {
-                sendLocationToFirebase();
-                countdown = RUNNER_SEND_INTERVAL_MS / 1000;
+            const now = Date.now();
+            const elapsed = now - gameState.startTime;
+            const remaining = Math.ceil((intervalMs - (elapsed % intervalMs)) / 1000);
+            
+            if (remaining <= 0 || remaining > intervalMs / 1000) {
+                updateRunnerCountdown(intervalMs / 1000);
+            } else {
+                updateRunnerCountdown(remaining);
             }
-            updateRunnerCountdown(countdown);
         }, 1000);
+        
         if (!window.gameTimers) window.gameTimers = [];
         window.gameTimers.push(countdownInterval);
-        sendLocationToFirebase(); // 初回送信
-        sendTimer = setInterval(() => sendLocationToFirebase(), RUNNER_SEND_INTERVAL_MS);
+        
+        // 初回送信（ゲーム開始直後なら送信）
+        if (elapsed < 1000) {
+            sendLocationToFirebase();
+        }
+        
+        // 次の同期タイミングで送信を開始
+        setTimeout(() => {
+            sendLocationToFirebase();
+            // 以降は30秒ごとに送信
+            sendTimer = setInterval(() => sendLocationToFirebase(), intervalMs);
+        }, nextSendIn);
     }
 }
 

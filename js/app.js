@@ -393,14 +393,17 @@ function formatTime(timestamp) {
 function watchGameStatus() {
     gameStatusRef.on('value', (snapshot) => {
         const data = snapshot.val();
+        console.log('Game status changed:', data);
         if (!data) return;
         gameState.status = data.status;
         gameState.startTime = data.startTime;
         gameState.endTime = data.endTime;
         gameState.duration = data.duration;
         if (data.status === 'countdown') {
+            console.log('Showing countdown...');
             showCountdownScreen(data.countdownStart);
         } else if (data.status === 'active') {
+            console.log('Game active! Hiding overlay and starting...');
             hideWaitingOverlay();
             startLocationSending();
             updateGameTimer();
@@ -569,7 +572,7 @@ function hideWaitingOverlay() {
     if (overlay) {
         overlay.classList.add('hidden');
     }
-    
+
     // カウントダウンインターバルをクリア
     if (countdownInterval) {
         clearInterval(countdownInterval);

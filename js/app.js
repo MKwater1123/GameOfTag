@@ -47,6 +47,7 @@ const RUNNER_SEND_INTERVAL_MS = 30 * 1000;  // 逃走者: 30秒ごと（テス�
 let database;
 let playersRef;
 let sendTimer = null; // 位置送信用タイマー（鬼/逃走者共通）
+let watchId = null; // GPS監視ID
 
 // ====================
 // 初期化
@@ -195,7 +196,7 @@ function startLocationTracking() {
     }
 
     // 常時追跡
-    navigator.geolocation.watchPosition(
+    watchId = navigator.geolocation.watchPosition(
         (position) => {
             currentUser.lat = position.coords.latitude;
             currentUser.lng = position.coords.longitude;
@@ -302,6 +303,7 @@ function getDistance(lat1, lng1, lat2, lng2) {
 // ====================
 function sendLocationToFirebase() {
     if (!database || currentUser.lat == null || currentUser.lng == null) return;
+    if (currentUser.captured) return; // 確保済みは送信しない
     updateFirebaseLocation(Date.now());
 }
 
@@ -343,6 +345,7 @@ function watchPlayers() {
 
         // 自分が確保されたかチェック
         if (currentUser.id && players[currentUser.id] && players[currentUser.id].captured && !currentUser.captured) {
+            console.log('🚨 確保を検知しました！', players[currentUser.id]);
             currentUser.captured = true;
             currentUser.capturedBy = players[currentUser.id].capturedBy;
             showCapturedScreen();
@@ -450,13 +453,19 @@ function calculateDistance(lat1, lng1, lat2, lng2) {
 
 // 確保処理（グローバルスコープに公開）
 window.capturePlayer = function (playerId, username) {
+    console.log('🎯 確保ボタンが押されました:', playerId, username);
+
     if (currentUser.role !== 'oni') {
         alert('鬼のみが確保できます');
         return;
     }
 
-    if (!playersRef) return;
+    if (!playersRef) {
+        console.error('❌ playersRef が未初期化');
+        return;
+    }
 
+    console.log('📝 Firebase に確保情報を送信中...');
     playersRef.child(playerId).update({
         captured: true,
         capturedBy: currentUser.username,
@@ -471,7 +480,7 @@ window.capturePlayer = function (playerId, username) {
         }
     }).catch(error => {
         console.error('確保エラー:', error);
-        alert('確保に失敗しました');
+        alert('確保に失敗しました: ' + error.message);
     });
 };
 
@@ -491,6 +500,8 @@ function updateLastUpdateDisplay(timestamp) {
 // 確保画面
 // ====================
 function showCapturedScreen() {
+    console.log('👮 確保されました by', currentUser.capturedBy);
+
     // 位置送信を停止
     if (sendTimer) {
         clearInterval(sendTimer);
@@ -500,14 +511,18 @@ function showCapturedScreen() {
     // GPS監視を停止
     if (watchId) {
         navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+    }
+
+    // Firebase監視を停止
+    if (playersRef) {
+        playersRef.off();
     }
 
     // 画面を切り替え
     document.getElementById('map-screen').classList.add('hidden');
     document.getElementById('captured-screen').classList.remove('hidden');
     document.getElementById('captured-by-name').textContent = currentUser.capturedBy || '不明';
-
-    console.log('👮 確保されました by', currentUser.capturedBy);
 }
 
 // ====================

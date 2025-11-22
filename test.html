@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Tag - テストモード</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        .status {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+        }
+
+        .label {
+            font-weight: bold;
+            color: #666;
+        }
+
+        .value {
+            color: #333;
+        }
+
+        .success {
+            color: #4caf50;
+        }
+
+        .error {
+            color: #f44336;
+        }
+
+        .warning {
+            color: #ff9800;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        #log {
+            background: #222;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🧪 GPS Tag - テストモード</h1>
+
+    <div class="card">
+        <h2>システムチェック</h2>
+        <div class="status">
+            <span class="label">Geolocation API:</span>
+            <span class="value" id="geo-status">確認中...</span>
+        </div>
+        <div class="status">
+            <span class="label">Firebase:</span>
+            <span class="value" id="firebase-status">確認中...</span>
+        </div>
+        <div class="status">
+            <span class="label">Leaflet:</span>
+            <span class="value" id="leaflet-status">確認中...</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>現在位置</h2>
+        <div class="status">
+            <span class="label">緯度:</span>
+            <span class="value" id="lat">--</span>
+        </div>
+        <div class="status">
+            <span class="label">経度:</span>
+            <span class="value" id="lng">--</span>
+        </div>
+        <div class="status">
+            <span class="label">精度:</span>
+            <span class="value" id="accuracy">--</span>
+        </div>
+        <button class="btn-primary" onclick="getLocation()">位置情報を取得</button>
+    </div>
+
+    <div class="card">
+        <h2>Firebase接続テスト</h2>
+        <button class="btn-success" onclick="testFirebaseWrite()">データ書き込み</button>
+        <button class="btn-primary" onclick="testFirebaseRead()">データ読み込み</button>
+        <button class="btn-danger" onclick="clearTestData()">テストデータ削除</button>
+    </div>
+
+    <div class="card">
+        <h2>アクション</h2>
+        <button class="btn-primary" onclick="window.location.href='index.html'">本アプリを起動</button>
+    </div>
+
+    <div class="card">
+        <h2>ログ</h2>
+        <div id="log"></div>
+    </div>
+
+    <!-- Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <script type="module">
+        import { firebaseConfig } from './js/firebase-config.js';
+
+        let database;
+        const logElement = document.getElementById('log');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#f44' : type === 'success' ? '#4f4' : '#0f0';
+            logElement.innerHTML += `<div style="color:${color}">[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+
+        // システムチェック
+        function checkSystems() {
+            // Geolocation
+            if ('geolocation' in navigator) {
+                document.getElementById('geo-status').innerHTML = '<span class="success">✓ 利用可能</span>';
+                log('Geolocation API: OK', 'success');
+            } else {
+                document.getElementById('geo-status').innerHTML = '<span class="error">✗ 利用不可</span>';
+                log('Geolocation API: NG', 'error');
+            }
+
+            // Leaflet
+            if (typeof L !== 'undefined') {
+                document.getElementById('leaflet-status').innerHTML = '<span class="success">✓ 読み込み済み</span>';
+                log('Leaflet: OK', 'success');
+            } else {
+                document.getElementById('leaflet-status').innerHTML = '<span class="error">✗ 未読み込み</span>';
+                log('Leaflet: NG', 'error');
+            }
+
+            // Firebase
+            if (typeof firebase !== 'undefined') {
+                try {
+                    firebase.initializeApp(firebaseConfig);
+                    database = firebase.database();
+                    document.getElementById('firebase-status').innerHTML = '<span class="success">✓ 接続済み</span>';
+                    log('Firebase: 初期化成功', 'success');
+                } catch (error) {
+                    document.getElementById('firebase-status').innerHTML = '<span class="error">✗ 初期化失敗</span>';
+                    log('Firebase: ' + error.message, 'error');
+                }
+            } else {
+                document.getElementById('firebase-status').innerHTML = '<span class="error">✗ 未読み込み</span>';
+                log('Firebase: CDN未読み込み', 'error');
+            }
+        }
+
+        // 位置情報取得
+        window.getLocation = function () {
+            log('位置情報を取得中...');
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    document.getElementById('lat').textContent = position.coords.latitude.toFixed(6);
+                    document.getElementById('lng').textContent = position.coords.longitude.toFixed(6);
+                    document.getElementById('accuracy').textContent = position.coords.accuracy.toFixed(2) + ' m';
+                    log(`位置取得成功: ${position.coords.latitude}, ${position.coords.longitude}`, 'success');
+                },
+                (error) => {
+                    log('位置情報取得エラー: ' + error.message, 'error');
+                    alert('位置情報の取得に失敗しました: ' + error.message);
+                }
+            );
+        };
+
+        // Firebase書き込みテスト
+        window.testFirebaseWrite = function () {
+            if (!database) {
+                log('Firebaseが初期化されていません', 'error');
+                return;
+            }
+
+            const testData = {
+                username: 'テストユーザー',
+                role: 'runner',
+                lat: 35.6895,
+                lng: 139.6917,
+                updated_at: Date.now()
+            };
+
+            log('Firebaseにデータを書き込み中...');
+            database.ref('game_session_v1/players/test_user').set(testData)
+                .then(() => {
+                    log('データ書き込み成功！', 'success');
+                })
+                .catch((error) => {
+                    log('書き込みエラー: ' + error.message, 'error');
+                });
+        };
+
+        // Firebase読み込みテスト
+        window.testFirebaseRead = function () {
+            if (!database) {
+                log('Firebaseが初期化されていません', 'error');
+                return;
+            }
+
+            log('Firebaseからデータを読み込み中...');
+            database.ref('game_session_v1/players').once('value')
+                .then((snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        log('データ読み込み成功: ' + JSON.stringify(data, null, 2), 'success');
+                    } else {
+                        log('データが存在しません', 'info');
+                    }
+                })
+                .catch((error) => {
+                    log('読み込みエラー: ' + error.message, 'error');
+                });
+        };
+
+        // テストデータ削除
+        window.clearTestData = function () {
+            if (!database) {
+                log('Firebaseが初期化されていません', 'error');
+                return;
+            }
+
+            if (confirm('テストデータを削除しますか？')) {
+                log('テストデータを削除中...');
+                database.ref('game_session_v1/players/test_user').remove()
+                    .then(() => {
+                        log('テストデータ削除成功', 'success');
+                    })
+                    .catch((error) => {
+                        log('削除エラー: ' + error.message, 'error');
+                    });
+            }
+        };
+
+        // 初期化
+        checkSystems();
+    </script>
+</body>
+
+</html>

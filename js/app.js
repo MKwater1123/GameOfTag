@@ -35,22 +35,19 @@ const GAME_SETTINGS = {
 };
 
 // 逃走者の位置送信間隔（ミリ秒）
-// const RUNNER_UPDATE_INTERVAL = 10 * 60 * 1000; // 10分
-const RUNNER_UPDATE_INTERVAL = 30 * 1000; // 30秒（テスト用）
-let updateTimer = null;
-let nextUpdateTime = null;
+// 本番は 10 * 60 * 1000 などに変更可能
+const RUNNER_SEND_INTERVAL_MS = 30 * 1000; // テスト用: 30秒
 
 // Firebase参照（CDN版を想定）
 let database;
 let playersRef;
-let locationSendTimer = null;
-let sendTimer = null;
+let sendTimer = null; // 位置送信用タイマー（鬼/逃走者共通）
 
 // ====================
 // 初期化
 // ====================
-console.log('🚀 GPS Tag アプリ起動');
-console.log('📅 読み込み時刻:', new Date().toLocaleString());
+console.log('App start');
+console.log('Loaded at:', new Date().toLocaleString());
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('📄 DOM読み込み完了');
@@ -59,25 +56,24 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initFirebase() {
-    console.log('🔧 Firebase初期化開始...');
+    console.log('Initializing Firebase...');
     // Firebase CDN使用時の初期化
     if (typeof window.firebase !== 'undefined') {
-        console.log('✅ Firebase CDN読み込み確認');
+        console.log('Firebase CDN detected');
         try {
             window.firebase.initializeApp(firebaseConfig);
             database = window.firebase.database();
             playersRef = database.ref('game_session_v1/players');
             gameStatusRef = database.ref('game_session_v1/game_status');
-            console.log('✅ Firebase初期化成功');
-            console.log('📍 Database URL:', firebaseConfig.databaseURL);
+            console.log('Firebase init success, DB URL:', firebaseConfig.databaseURL);
 
             // ゲーム状態を監視
             watchGameStatus();
         } catch (error) {
-            console.error('❌ Firebase初期化エラー:', error);
+            console.error('Firebase init error:', error);
         }
     } else {
-        console.error('❌ Firebase CDNが読み込まれていません');
+        console.error('Firebase CDN not loaded');
     }
 }
 
@@ -117,11 +113,7 @@ function joinGame(role) {
     currentUser.role = role;
     currentUser.id = 'user_' + Date.now();
 
-    console.log('🎮 ゲーム参加:', {
-        username: username,
-        role: role,
-        id: currentUser.id
-    });
+    console.log('Join game:', { username, role, id: currentUser.id });
 
     // マップ画面へ遷移
     document.getElementById('login-screen').classList.add('hidden');
@@ -157,7 +149,7 @@ function initMapScreen() {
     watchPlayers();
 
     // 注：位置送信はゲーム開始後に開始
-    console.log('⚠️ ゲーム開始待機中...');
+    console.log('Waiting for game start...');
 }
 
 // ====================
@@ -187,7 +179,7 @@ function initMap() {
 // 位置情報取得
 // ====================
 function startLocationTracking() {
-    console.log('📍 位置情報取得開始...');
+    console.log('Start geolocation watch');
     if (!navigator.geolocation) {
         console.error('❌ Geolocation API利用不可');
         alert('このブラウザは位置情報に対応していません');
@@ -199,7 +191,7 @@ function startLocationTracking() {
         (position) => {
             currentUser.lat = position.coords.latitude;
             currentUser.lng = position.coords.longitude;
-            console.log('📍 位置取得:', currentUser.lat.toFixed(6), currentUser.lng.toFixed(6));
+            // 位置取得
 
             // 自分のマーカー更新
             updateSelfMarker();
@@ -211,7 +203,7 @@ function startLocationTracking() {
             sendLocationToFirebase();
         },
         (error) => {
-            console.error('❌ 位置情報取得エラー:', error.message);
+            console.error('Geolocation error:', error.message);
             alert('位置情報の取得に失敗しました: ' + error.message);
         },
         {
@@ -241,7 +233,7 @@ function updateSelfMarker() {
             .bindPopup(`<b>🟢 ${currentUser.username} (自分)</b><br>${currentUser.role === 'oni' ? '鬼' : '逃走者'}`);
 
         map.setView([currentUser.lat, currentUser.lng], 15);
-        console.log('🟢 自分のマーカー作成: 緑色');
+        console.log('Create self marker');
     } else {
         userMarker.setLatLng([currentUser.lat, currentUser.lng]);
     }
@@ -301,27 +293,8 @@ function getDistance(lat1, lng1, lat2, lng2) {
 // Firebase送信
 // ====================
 function sendLocationToFirebase() {
-    if (!database || !currentUser.lat) return;
-
-    const now = Date.now();
-
-    // 鬼：初回のみ送信（以降は定期タイマーで送信）
-    if (currentUser.role === 'oni') {
-        if (!currentUser.lastSent) {
-            updateFirebaseLocation(now);
-            currentUser.lastSent = now;
-            console.log('鬼: 初回位置送信完了');
-        }
-    }
-    // 逃走者：30秒に1回
-    else if (currentUser.role === 'runner') {
-        if (!nextUpdateTime || now >= nextUpdateTime) {
-            updateFirebaseLocation(now);
-            nextUpdateTime = now + RUNNER_UPDATE_INTERVAL;
-            startCountdown();
-            console.log('逃走者: 位置送信完了', currentUser.lat, currentUser.lng);
-        }
-    }
+    if (!database || currentUser.lat == null || currentUser.lng == null) return;
+    updateFirebaseLocation(Date.now());
 }
 
 function updateFirebaseLocation(timestamp) {
@@ -333,126 +306,41 @@ function updateFirebaseLocation(timestamp) {
         updated_at: timestamp
     };
 
-    playersRef.child(currentUser.id).set(data)
-        .then(() => {
-            console.log('Firebase送信成功:', data);
-        })
-        .catch((error) => {
-            console.error('Firebase送信失敗:', error);
-        });
+    playersRef.child(currentUser.id).set(data).catch((error) => {
+        console.error('Firebase write error:', error);
+    });
 }
 
-// ====================
-// カウントダウンタイマー（逃走者用）
-// ====================
-function startCountdown() {
-    if (updateTimer) clearInterval(updateTimer);
-
-    updateTimer = setInterval(() => {
-        const remaining = nextUpdateTime - Date.now();
-
-        if (remaining <= 0) {
-            document.getElementById('countdown').textContent = '00:00';
-            clearInterval(updateTimer);
-        } else {
-            const minutes = Math.floor(remaining / 60000);
-            const seconds = Math.floor((remaining % 60000) / 1000);
-            document.getElementById('countdown').textContent =
-                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        }
-    }, 1000);
+// 逃走者用カウントダウン更新
+function updateRunnerCountdown(seconds) {
+    const el = document.getElementById('countdown');
+    if (!el) return;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
 // ====================
 // 他プレイヤー監視
 // ====================
 function watchPlayers() {
-    console.log('🔍 watchPlayers関数呼び出し');
-    console.log('playersRef状態:', playersRef ? '✅初期化済み' : '❌未初期化');
-    console.log('database状態:', database ? '✅初期化済み' : '❌未初期化');
-
-    if (!playersRef) {
-        console.error('❌ playersRefが初期化されていません');
-        console.error('再初期化を試みます...');
-
-        // 再初期化を試みる
-        if (database) {
-            playersRef = database.ref('game_session_v1/players');
-            console.log('✅ playersRefを再初期化しました');
-        } else {
-            console.error('❌ databaseがないため再初期化できません');
-            return;
-        }
-    }
-
-    console.log('👀 Firebaseのプレイヤーデータ監視開始');
-    console.log('Firebaseパス:', 'game_session_v1/players');
-
+    if (!playersRef) return;
     playersRef.on('value', (snapshot) => {
-        console.log('📡 Firebaseイベント発火！');
         const players = snapshot.val();
-        console.log('📬 Firebase受信:', players);
-        console.log('📊 プレイヤー数:', players ? Object.keys(players).length : 0);
-
-        if (!players) {
-            console.log('⚠️ プレイヤーデータがありません');
-            return;
-        }
-
-        // 既存マーカークリア
-        const oldMarkerCount = Object.keys(playerMarkers).length;
-        Object.values(playerMarkers).forEach(marker => marker.remove());
+        if (!players) return;
+        Object.values(playerMarkers).forEach(m => m.remove());
         playerMarkers = {};
-        console.log('🧹 既存マーカーを削除:', oldMarkerCount, '個');
-
-        let addedCount = 0;
-        let skippedCount = 0;
-
         Object.entries(players).forEach(([playerId, playerData]) => {
-            console.log('🔍 プレイヤーチェック:', {
-                playerId,
-                username: playerData.username,
-                role: playerData.role,
-                自分: playerId === currentUser.id,
-                自分のID: currentUser.id
-            });
-
-            // 自分は除外
-            if (playerId === currentUser.id) {
-                console.log('⏭️ 自分なのでスキップ');
-                skippedCount++;
-                return;
-            }
-
-            // 逃走者の場合、鬼は表示しない
-            if (currentUser.role === 'runner' && playerData.role === 'oni') {
-                console.log('🏃 逃走者モード: 鬼を非表示', playerData.username);
-                skippedCount++;
-                return;
-            }
-
-            // マーカー追加
+            if (playerId === currentUser.id) return; // 自分は表示済み
+            if (currentUser.role === 'runner' && playerData.role === 'oni') return; // 逃走者は鬼非表示
             addPlayerMarker(playerId, playerData);
-            addedCount++;
         });
-
-        console.log('🎯 マーカー更新完了: 追加', addedCount, '個 / スキップ', skippedCount, '個');
-    }, (error) => {
-        console.error('❌ Firebase監視エラー:', error);
-    });
+    }, (error) => console.error('Players watch error:', error));
 }
 
 function addPlayerMarker(playerId, playerData) {
     const { username, role, lat, lng, updated_at } = playerData;
 
-    console.log('📍 マーカー追加試行:', {
-        playerId,
-        username,
-        role,
-        lat,
-        lng,
-        map初期化: map ? '✅' : '❌'
-    });
 
     if (!map) {
         console.error('❌ 地図が初期化されていません');
@@ -486,7 +374,7 @@ function addPlayerMarker(playerId, playerData) {
             .bindPopup(`<b>${colorEmoji} ${username}</b><br>${role === 'oni' ? '鬼' : '逃走者'}<br>更新: ${formatTime(updated_at)}`);
 
         playerMarkers[playerId] = marker;
-        console.log(`✅ マーカー追加成功 ${colorEmoji}:`, username, 'role:', role, '位置:', lat.toFixed(6), lng.toFixed(6));
+        // マーカー追加成功
     } catch (error) {
         console.error('❌ マーカー追加エラー:', error);
     }
@@ -503,108 +391,63 @@ function formatTime(timestamp) {
 function watchGameStatus() {
     gameStatusRef.on('value', (snapshot) => {
         const data = snapshot.val();
-        console.log('📊 ゲームステータス更新:', data);
-
-        if (data) {
-            gameState.status = data.status;
-            gameState.startTime = data.startTime;
-            gameState.endTime = data.endTime;
-            gameState.duration = data.duration;
-
-            // ステータスに応じて処理
-            if (data.status === 'active') {
-                console.log('✅ ゲーム開始を検知');
-                startLocationSending();
-                updateGameTimer();
-            } else if (data.status === 'ended') {
-                console.log('🏁 ゲーム終了を検知');
-                stopLocationSending();
-                showGameEndMessage();
-            } else if (data.status === 'waiting') {
-                console.log('⏳ ゲーム待機中');
-                stopLocationSending();
-                showWaitingMessage();
-            }
+        if (!data) return;
+        gameState.status = data.status;
+        gameState.startTime = data.startTime;
+        gameState.endTime = data.endTime;
+        gameState.duration = data.duration;
+        if (data.status === 'active') {
+            startLocationSending();
+            updateGameTimer();
+        } else if (data.status === 'ended') {
+            stopLocationSending();
+            showGameEndMessage();
+        } else if (data.status === 'waiting') {
+            stopLocationSending();
+            showWaitingMessage();
         }
     });
 }
 
 function checkGameStatus() {
-    gameStatusRef.once('value')
-        .then((snapshot) => {
-            const data = snapshot.val();
-            console.log('🔍 現在のゲームステータス:', data);
-
-            if (data) {
-                gameState.status = data.status;
-                gameState.startTime = data.startTime;
-                gameState.endTime = data.endTime;
-                gameState.duration = data.duration;
-
-                if (data.status === 'active') {
-                    console.log('✅ ゲームは既に開始されています');
-                    startLocationSending();
-                    updateGameTimer();
-                } else if (data.status === 'ended') {
-                    console.log('🏁 ゲームは既に終了しています');
-                    showGameEndMessage();
-                } else {
-                    console.log('⏳ ゲーム開始待機中...');
-                    showWaitingMessage();
-                }
-            } else {
-                console.log('⚠️ ゲームステータスが未設定です');
-                showWaitingMessage();
-            }
-        })
-        .catch((error) => {
-            console.error('❌ ゲームステータス取得エラー:', error);
-        });
+    gameStatusRef.once('value').then((snapshot) => {
+        const data = snapshot.val();
+        if (!data) { showWaitingMessage(); return; }
+        gameState.status = data.status;
+        gameState.startTime = data.startTime;
+        gameState.endTime = data.endTime;
+        gameState.duration = data.duration;
+        if (data.status === 'active') {
+            startLocationSending();
+            updateGameTimer();
+        } else if (data.status === 'ended') {
+            showGameEndMessage();
+        } else {
+            showWaitingMessage();
+        }
+    }).catch(err => console.error('Game status read error:', err));
 }
 
 function startLocationSending() {
-    // 既に送信中の場合は何もしない
-    if (sendTimer) {
-        console.log('⚠️ 既に位置情報送信中です');
-        return;
-    }
-
-    console.log('📡 位置情報送信開始:', currentUser.role);
-
+    if (sendTimer) return; // 既に開始済み
     if (currentUser.role === 'oni') {
-        // 鬼は5秒ごとに位置情報を送信
-        sendLocationToFirebase(); // 即座に最初の送信
-        sendTimer = setInterval(() => {
-            sendLocationToFirebase();
-        }, 5000);
-        console.log('👹 鬼モード: 5秒ごとに位置情報を送信');
+        sendLocationToFirebase();
+        sendTimer = setInterval(() => sendLocationToFirebase(), 5000);
     } else if (currentUser.role === 'runner') {
-        // 逃走者は30秒ごとに位置情報を送信
-        sendLocationToFirebase(); // 即座に最初の送信
-
-        let countdown = 30;
-        updateCountdown(countdown);
-
+        let countdown = RUNNER_SEND_INTERVAL_MS / 1000;
+        updateRunnerCountdown(countdown);
         const countdownInterval = setInterval(() => {
             countdown--;
-            updateCountdown(countdown);
-
             if (countdown <= 0) {
-                countdown = 30;
+                sendLocationToFirebase();
+                countdown = RUNNER_SEND_INTERVAL_MS / 1000;
             }
+            updateRunnerCountdown(countdown);
         }, 1000);
-
-        sendTimer = setInterval(() => {
-            sendLocationToFirebase();
-        }, 30000);
-
-        // タイマーIDを保存（終了時にクリアするため）
-        if (!window.gameTimers) {
-            window.gameTimers = [];
-        }
+        if (!window.gameTimers) window.gameTimers = [];
         window.gameTimers.push(countdownInterval);
-
-        console.log('🏃 逃走者モード: 30秒ごとに位置情報を送信');
+        sendLocationToFirebase(); // 初回送信
+        sendTimer = setInterval(() => sendLocationToFirebase(), RUNNER_SEND_INTERVAL_MS);
     }
 }
 
@@ -612,7 +455,7 @@ function stopLocationSending() {
     if (sendTimer) {
         clearInterval(sendTimer);
         sendTimer = null;
-        console.log('🛑 位置情報送信を停止');
+        console.log('Stop sending location');
     }
 
     // カウントダウンタイマーも停止

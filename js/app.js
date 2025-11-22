@@ -151,6 +151,9 @@ function initMapScreen() {
     // Firebase監視開始
     watchPlayers();
 
+    // 参加者リストボタンのセットアップ
+    setupPlayerListButton();
+
     // 注：位置送信はゲーム開始後に開始
     console.log('Waiting for game start...');
 }
@@ -357,6 +360,9 @@ function watchPlayers() {
                 console.log('Runner position updated at:', formatTime(latestRunnerUpdate));
             }
         }
+
+        // 参加者リスト更新
+        updatePlayerListPanel(players);
     }, (error) => console.error('Players watch error:', error));
 }
 
@@ -412,6 +418,77 @@ function updateLastUpdateDisplay(timestamp) {
     if (lastUpdateEl) {
         lastUpdateEl.textContent = formatTime(timestamp);
     }
+}
+
+// ====================
+// 参加者リスト機能
+// ====================
+function setupPlayerListButton() {
+    const listBtn = document.getElementById('player-list-btn');
+    const panel = document.getElementById('player-list-panel');
+    const closeBtn = document.getElementById('close-player-list');
+
+    listBtn.addEventListener('click', () => {
+        panel.classList.toggle('hidden');
+    });
+
+    closeBtn.addEventListener('click', () => {
+        panel.classList.add('hidden');
+    });
+}
+
+function updatePlayerListPanel(players) {
+    const listItems = document.getElementById('player-list-items');
+    if (!listItems) return;
+
+    let html = '';
+    const playerArray = [];
+
+    // 自分を最初に追加
+    playerArray.push({
+        id: currentUser.id,
+        username: currentUser.username,
+        role: currentUser.role,
+        isSelf: true
+    });
+
+    // 他のプレイヤーを追加
+    if (players) {
+        Object.entries(players).forEach(([playerId, playerData]) => {
+            if (playerId !== currentUser.id) {
+                // 逃走者の場合、鬼の情報は表示しない
+                if (currentUser.role === 'runner' && playerData.role === 'oni') {
+                    return;
+                }
+                playerArray.push({
+                    id: playerId,
+                    username: playerData.username,
+                    role: playerData.role,
+                    isSelf: false
+                });
+            }
+        });
+    }
+
+    // HTML生成
+    playerArray.forEach(player => {
+        const roleIcon = player.role === 'oni' ? '🔴' : '🔵';
+        const roleText = player.role === 'oni' ? '鬼' : '逃走者';
+        const selfClass = player.isSelf ? ' self' : '';
+        const selfLabel = player.isSelf ? ' (自分)' : '';
+
+        html += `
+            <div class="player-list-item${selfClass}">
+                <span class="player-role-icon">${roleIcon}</span>
+                <div class="player-info-text">
+                    <div class="player-name">${player.username}${selfLabel}</div>
+                    <div class="player-role-text">${roleText}</div>
+                </div>
+            </div>
+        `;
+    });
+
+    listItems.innerHTML = html || '<p style="text-align:center; padding:20px; color:#999;">参加者がいません</p>';
 }
 
 // ====================

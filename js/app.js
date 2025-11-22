@@ -821,20 +821,75 @@ function hideWaitingOverlay() {
 }
 
 function showGameEndMessage() {
-    const bottomBar = document.querySelector('.bottom-bar');
-    if (bottomBar) {
-        bottomBar.textContent = '🏁 ゲーム終了';
-        bottomBar.style.backgroundColor = '#888';
-    }
+    console.log('🏁 ゲーム終了画面を表示');
 
     // タイマーをクリア
     if (gameTimerInterval) {
         clearInterval(gameTimerInterval);
-        const timerElement = document.getElementById('game-timer');
-        if (timerElement) {
-            timerElement.remove();
-        }
+        gameTimerInterval = null;
     }
+
+    // 位置送信を停止
+    if (sendTimer) {
+        clearInterval(sendTimer);
+        sendTimer = null;
+    }
+
+    // GPS監視を停止
+    if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+    }
+
+    // プレイヤー情報を取得して結果を表示
+    if (playersRef) {
+        playersRef.once('value').then((snapshot) => {
+            const players = snapshot.val();
+            displayGameResults(players);
+        });
+    }
+
+    // 画面を切り替え
+    document.getElementById('map-screen').classList.add('hidden');
+    document.getElementById('game-end-screen').classList.remove('hidden');
+}
+
+function displayGameResults(players) {
+    const winnersList = document.getElementById('winners-list');
+    const capturedList = document.getElementById('captured-list');
+
+    if (!winnersList || !capturedList) return;
+
+    const winners = [];
+    const captured = [];
+
+    if (players) {
+        Object.entries(players).forEach(([playerId, playerData]) => {
+            if (playerData.role === 'runner') {
+                if (playerData.captured) {
+                    captured.push(playerData.username);
+                } else {
+                    winners.push(playerData.username);
+                }
+            }
+        });
+    }
+
+    // 逃走成功者を表示
+    if (winners.length > 0) {
+        winnersList.innerHTML = winners.map(name => `<li>🎉 ${name}</li>`).join('');
+    } else {
+        winnersList.innerHTML = '<p class="no-players">逃走成功者なし</p>';
+    }
+
+    // 確保されたプレイヤーを表示
+    if (captured.length > 0) {
+        capturedList.innerHTML = captured.map(name => `<li>👮 ${name}</li>`).join('');
+    } else {
+        capturedList.innerHTML = '<p class="no-players">確保されたプレイヤーなし</p>';
+    }
+
+    console.log(`逃走成功: ${winners.length}人, 確保: ${captured.length}人`);
 }
 
 // ====================

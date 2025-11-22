@@ -247,10 +247,10 @@ body {
 
 /* 地図内の参加者ボタン */
 .player-list-button-map {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 1000;
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    z-index: 1000 !important;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     color: white;
     border: none;

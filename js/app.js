@@ -718,19 +718,11 @@ function updateGameTimer() {
         clearInterval(gameTimerInterval);
     }
 
-    const statusBar = document.querySelector('.status-bar');
-    if (!statusBar) return;
+    const timerElement = document.getElementById('game-timer');
+    if (!timerElement) return;
 
-    // タイマー表示要素を作成
-    let timerElement = document.getElementById('game-timer');
-    if (!timerElement) {
-        timerElement = document.createElement('div');
-        timerElement.id = 'game-timer';
-        timerElement.style.marginLeft = '10px';
-        timerElement.style.fontWeight = 'bold';
-        timerElement.style.color = '#ff6b6b';
-        statusBar.appendChild(timerElement);
-    }
+    // タイマーを表示
+    timerElement.classList.remove('hidden');
 
     gameTimerInterval = setInterval(() => {
         const now = Date.now();

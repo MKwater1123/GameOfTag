@@ -352,6 +352,7 @@ function watchPlayers() {
         Object.entries(players).forEach(([playerId, playerData]) => {
             if (playerId === currentUser.id) return; // 自分は表示済み
             if (currentUser.role === 'runner' && playerData.role === 'oni') return; // 逃走者は鬼非表示
+            if (playerData.captured) return; // 確保されたプレイヤーは表示しない
             addPlayerMarker(playerId, playerData);
 
             // 鬼の場合、逃走者の最新更新時刻を追跡
@@ -391,18 +392,13 @@ function addPlayerMarker(playerId, playerData) {
     }
 
     try {
-        // アイコン色選択: 鬼=赤、逃走者=青、確保済み=グレー
-        let colorUrl;
-        if (captured) {
-            colorUrl = 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png';
-        } else {
-            colorUrl = role === 'oni'
-                ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png'
-                : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png';
-        }
+        // アイコン色選択: 鬼=赤、逃走者=青
+        const colorUrl = role === 'oni'
+            ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png'
+            : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png';
 
-        const colorEmoji = captured ? '⚫' : (role === 'oni' ? '🔴' : '🔵');
-        const statusText = captured ? '(確保済み)' : (role === 'oni' ? '鬼' : '逃走者');
+        const colorEmoji = role === 'oni' ? '🔴' : '🔵';
+        const statusText = role === 'oni' ? '鬼' : '逃走者';
 
         const icon = L.icon({
             iconUrl: colorUrl,
@@ -468,6 +464,11 @@ window.capturePlayer = function (playerId, username) {
     }).then(() => {
         console.log(`✅ ${username} を確保しました`);
         alert(`${username} を確保しました！`);
+        // マーカーを削除
+        if (playerMarkers[playerId]) {
+            playerMarkers[playerId].remove();
+            delete playerMarkers[playerId];
+        }
     }).catch(error => {
         console.error('確保エラー:', error);
         alert('確保に失敗しました');

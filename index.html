@@ -30,6 +30,18 @@
     </div>
 
     <div id="map-screen" class="screen hidden">
+        <!-- 待機/カウントダウン画面 -->
+        <div id="waiting-overlay" class="waiting-overlay">
+            <div class="waiting-content">
+                <h1 id="waiting-title">⏳ ゲーム開始を待っています</h1>
+                <p id="waiting-message">管理者がゲームを開始するまでお待ちください</p>
+                <div id="countdown-display" class="countdown-display hidden">
+                    <div class="countdown-number" id="countdown-number">10</div>
+                    <p>秒後にゲーム開始</p>
+                </div>
+            </div>
+        </div>
+
         <div id="status-bar">
             <span id="role-display"></span>
             <span id="area-status">エリア内</span>

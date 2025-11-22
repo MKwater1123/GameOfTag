@@ -397,7 +397,10 @@ function watchGameStatus() {
         gameState.startTime = data.startTime;
         gameState.endTime = data.endTime;
         gameState.duration = data.duration;
-        if (data.status === 'active') {
+        if (data.status === 'countdown') {
+            showCountdownScreen(data.countdownStart);
+        } else if (data.status === 'active') {
+            hideWaitingOverlay();
             startLocationSending();
             updateGameTimer();
         } else if (data.status === 'ended') {
@@ -418,7 +421,10 @@ function checkGameStatus() {
         gameState.startTime = data.startTime;
         gameState.endTime = data.endTime;
         gameState.duration = data.duration;
-        if (data.status === 'active') {
+        if (data.status === 'countdown') {
+            showCountdownScreen(data.countdownStart);
+        } else if (data.status === 'active') {
+            hideWaitingOverlay();
             startLocationSending();
             updateGameTimer();
         } else if (data.status === 'ended') {
@@ -508,10 +514,58 @@ function updateGameTimer() {
 }
 
 function showWaitingMessage() {
-    const bottomBar = document.querySelector('.bottom-bar');
-    if (bottomBar) {
-        bottomBar.textContent = '⏳ ゲーム開始待機中...';
-        bottomBar.style.backgroundColor = '#ffa500';
+    const overlay = document.getElementById('waiting-overlay');
+    const title = document.getElementById('waiting-title');
+    const message = document.getElementById('waiting-message');
+    const countdownDisplay = document.getElementById('countdown-display');
+
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        title.textContent = '⏳ ゲーム開始を待っています';
+        message.textContent = '管理者がゲームを開始するまでお待ちください';
+        countdownDisplay.classList.add('hidden');
+    }
+}
+
+function showCountdownScreen(countdownStart) {
+    const overlay = document.getElementById('waiting-overlay');
+    const title = document.getElementById('waiting-title');
+    const message = document.getElementById('waiting-message');
+    const countdownDisplay = document.getElementById('countdown-display');
+    const countdownNumber = document.getElementById('countdown-number');
+    
+    if (!overlay) return;
+    
+    overlay.classList.remove('hidden');
+    title.textContent = '🎮 まもなくゲーム開始！';
+    message.classList.add('hidden');
+    countdownDisplay.classList.remove('hidden');
+    
+    const updateCountdown = () => {
+        const now = Date.now();
+        const elapsed = Math.floor((now - countdownStart) / 1000);
+        const remaining = 10 - elapsed;
+        
+        if (remaining > 0) {
+            countdownNumber.textContent = remaining;
+        } else {
+            countdownNumber.textContent = 'START!';
+        }
+    };
+    
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 100);
+    
+    // 10秒後にクリア
+    setTimeout(() => {
+        clearInterval(interval);
+    }, 11000);
+}
+
+function hideWaitingOverlay() {
+    const overlay = document.getElementById('waiting-overlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
     }
 }
 
@@ -677,21 +731,41 @@ function kickPlayer(playerId) {
 function startGame() {
     const duration = parseInt(document.getElementById('game-duration').value) || 30;
     const durationMs = duration * 60 * 1000;
+    const countdownStart = Date.now();
 
-    const gameData = {
-        status: 'active',
-        startTime: Date.now(),
-        endTime: Date.now() + durationMs,
+    // まずカウントダウン状態に設定
+    const countdownData = {
+        status: 'countdown',
+        countdownStart: countdownStart,
         duration: durationMs
     };
 
-    gameStatusRef.set(gameData)
+    gameStatusRef.set(countdownData)
         .then(() => {
-            console.log('✅ ゲーム開始:', gameData);
-            alert(`ゲームを開始しました！（${duration}分間）`);
+            console.log('✅ カウントダウン開始');
+            alert(`10秒後にゲームを開始します！（${duration}分間）`);
+
+            // 10秒後に実際のゲームを開始
+            setTimeout(() => {
+                const actualStartTime = Date.now();
+                const gameData = {
+                    status: 'active',
+                    startTime: actualStartTime,
+                    endTime: actualStartTime + durationMs,
+                    duration: durationMs
+                };
+
+                gameStatusRef.set(gameData)
+                    .then(() => {
+                        console.log('✅ ゲーム開始:', gameData);
+                    })
+                    .catch((error) => {
+                        console.error('❌ ゲーム開始エラー:', error);
+                    });
+            }, 10000);
         })
         .catch((error) => {
-            console.error('❌ ゲーム開始エラー:', error);
+            console.error('❌ カウントダウン開始エラー:', error);
         });
 }
 

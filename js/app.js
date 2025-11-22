@@ -13,11 +13,11 @@ let currentUser = {
     lng: null
 };
 
-// ゲーム設定（仕様書より）
+// ゲーム設定（鹿児島高専を中心に半径1km）
 const GAME_SETTINGS = {
-    center_lat: 35.6895,
-    center_lng: 139.6917,
-    radius_meter: 500
+    center_lat: 31.5475,
+    center_lng: 130.5575,
+    radius_meter: 1000
 };
 
 // 逃走者の位置送信間隔（ミリ秒）

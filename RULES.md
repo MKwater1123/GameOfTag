@@ -136,14 +136,10 @@ const GAME_SETTINGS = {
     radius_meter: 1000        // 半径（メートル）
 };
 
-// 逃走者の更新間隔
-const RUNNER_UPDATE_INTERVAL = 30 * 1000; // 30秒
-// 10分にする場合: 10 * 60 * 1000
-
-// 鬼の更新間隔（initMapScreen関数内）
-locationSendTimer = setInterval(() => {
-    // ...
-}, 5000); // 5秒
+// 位置送信頻度
+const ONI_SEND_INTERVAL_MS = 5 * 1000;      // 鬼: 5秒
+const RUNNER_SEND_INTERVAL_MS = 30 * 1000;  // 逃走者: 30秒（テスト用）
+// 本番では 10 * 60 * 1000 (10分) に変更可能
 ```
 
 ---

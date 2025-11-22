@@ -34,9 +34,10 @@ const GAME_SETTINGS = {
     radius_meter: 1000
 };
 
-// 逃走者の位置送信間隔（ミリ秒）
-// 本番は 10 * 60 * 1000 などに変更可能
-const RUNNER_SEND_INTERVAL_MS = 30 * 1000; // テスト用: 30秒
+// 位置情報送信頻度（ミリ秒）
+const ONI_SEND_INTERVAL_MS = 5 * 1000;      // 鬼: 5秒ごと
+const RUNNER_SEND_INTERVAL_MS = 30 * 1000;  // 逃走者: 30秒ごと（テスト用）
+// ※本番環境では RUNNER_SEND_INTERVAL_MS を 10 * 60 * 1000 (10分) に変更可能
 
 // Firebase参照（CDN版を想定）
 let database;
@@ -317,7 +318,7 @@ function updateRunnerCountdown(seconds) {
     if (!el) return;
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
-    el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    el.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 // ====================
@@ -432,7 +433,7 @@ function startLocationSending() {
     if (sendTimer) return; // 既に開始済み
     if (currentUser.role === 'oni') {
         sendLocationToFirebase();
-        sendTimer = setInterval(() => sendLocationToFirebase(), 5000);
+        sendTimer = setInterval(() => sendLocationToFirebase(), ONI_SEND_INTERVAL_MS);
     } else if (currentUser.role === 'runner') {
         let countdown = RUNNER_SEND_INTERVAL_MS / 1000;
         updateRunnerCountdown(countdown);

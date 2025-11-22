@@ -207,9 +207,9 @@ function updateSelfMarker() {
     if (!map || !currentUser.lat) return;
 
     if (!userMarker) {
-        // 青い矢印アイコン（自分）
-        const blueIcon = L.icon({
-            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+        // 緑色アイコン（自分）
+        const greenIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
             iconSize: [25, 41],
             iconAnchor: [12, 41],
@@ -217,7 +217,7 @@ function updateSelfMarker() {
             shadowSize: [41, 41]
         });
 
-        userMarker = L.marker([currentUser.lat, currentUser.lng], { icon: blueIcon })
+        userMarker = L.marker([currentUser.lat, currentUser.lng], { icon: greenIcon })
             .addTo(map)
             .bindPopup(`<b>${currentUser.username}</b><br>${currentUser.role === 'oni' ? '鬼' : '逃走者'}`);
 
@@ -445,10 +445,10 @@ function addPlayerMarker(playerId, playerData) {
     }
 
     try {
-        // アイコン色選択
+        // アイコン色選択: 鬼=赤、逃走者=青
         const colorUrl = role === 'oni'
             ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png'
-            : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png';
+            : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png';
 
         const icon = L.icon({
             iconUrl: colorUrl,

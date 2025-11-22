@@ -543,16 +543,6 @@ function addPlayerMarker(playerId, playerData) {
         // ポップアップ内容を構築
         let popupContent = `<b>${colorEmoji} ${username}</b><br>${statusText}<br>更新: ${formatTime(updated_at)}`;
 
-        // 鬼の場合、逃走者に確保ボタンを追加
-        if (currentUser.role === 'oni' && role === 'runner' && !captured) {
-            const distance = calculateDistance(currentUser.lat, currentUser.lng, lat, lng);
-            if (distance <= 50) { // 50m以内
-                popupContent += `<br><button class="capture-button" onclick="window.capturePlayer('${playerId}', '${username}')">CAPTURE (${Math.round(distance)}m)</button>`;
-            } else {
-                popupContent += `<br><small>距離: ${Math.round(distance)}m (50m以内で確保可能)</small>`;
-            }
-        }
-
         marker.bindPopup(popupContent);
         playerMarkers[playerId] = marker;
         // マーカー追加成功
@@ -684,18 +674,22 @@ function updatePlayerListPanel(players) {
         id: currentUser.id,
         username: currentUser.username,
         role: currentUser.role,
-        isSelf: true
+        isSelf: true,
+        lat: currentUser.lat,
+        lng: currentUser.lng
     });
 
     // 他のプレイヤーを追加
     if (players) {
         Object.entries(players).forEach(([playerId, playerData]) => {
-            if (playerId !== currentUser.id) {
+            if (playerId !== currentUser.id && !playerData.captured && !playerData.disqualified) {
                 playerArray.push({
                     id: playerId,
                     username: playerData.username,
                     role: playerData.role,
-                    isSelf: false
+                    isSelf: false,
+                    lat: playerData.lat,
+                    lng: playerData.lng
                 });
             }
         });
@@ -705,16 +699,33 @@ function updatePlayerListPanel(players) {
     playerArray.forEach(player => {
         const roleIcon = player.role === 'oni' ? '●' : '●';
         const roleText = player.role === 'oni' ? '鬼' : '逃走者';
+        const roleColor = player.role === 'oni' ? '#ff3b30' : '#00e5ff';
         const selfClass = player.isSelf ? ' self' : '';
         const selfLabel = player.isSelf ? ' (自分)' : '';
 
+        // 距離計算
+        let distanceInfo = '';
+        let captureButton = '';
+
+        if (!player.isSelf && currentUser.lat && player.lat) {
+            const distance = calculateDistance(currentUser.lat, currentUser.lng, player.lat, player.lng);
+            distanceInfo = `<div class="player-distance">${Math.round(distance)}m</div>`;
+
+            // 鬼が逃走者に10m以内に近づいたら確保ボタンを表示
+            if (currentUser.role === 'oni' && player.role === 'runner' && distance <= 10) {
+                captureButton = `<button class="capture-btn-list" onclick="window.capturePlayer('${player.id}', '${player.username}')">確保</button>`;
+            }
+        }
+
         html += `
             <div class="player-list-item${selfClass}">
-                <span class="player-role-icon">${roleIcon}</span>
+                <span class="player-role-icon" style="color: ${roleColor};">${roleIcon}</span>
                 <div class="player-info-text">
                     <div class="player-name">${player.username}${selfLabel}</div>
                     <div class="player-role-text">${roleText}</div>
+                    ${distanceInfo}
                 </div>
+                ${captureButton}
             </div>
         `;
     });

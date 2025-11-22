@@ -553,6 +553,7 @@ body {
     gap: 10px;
     border-left: 3px solid transparent;
     transition: all 0.2s;
+    position: relative;
 }
 
 .player-list-item.self {
@@ -578,6 +579,36 @@ body {
 .player-role-text {
     font-size: 0.85em;
     opacity: 0.8;
+}
+
+.player-distance {
+    font-size: 0.85em;
+    color: #666;
+    margin-top: 2px;
+}
+
+.capture-btn-list {
+    position: absolute;
+    right: 12px;
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(255, 75, 43, 0.3);
+}
+
+.capture-btn-list:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 75, 43, 0.5);
+}
+
+.capture-btn-list:active {
+    transform: scale(0.95);
 }
 
 /* Leafletマーカーカスタム */

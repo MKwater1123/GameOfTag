@@ -21,31 +21,36 @@ body {
 
 /* ログイン画面 */
 #login-screen {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .container {
-    background: white;
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 20px;
-    padding: 40px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    padding: 30px 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
     text-align: center;
     max-width: 400px;
     width: 90%;
 }
 
 .title {
-    font-size: 2.5em;
+    font-size: 2em;
     margin-bottom: 10px;
-    color: #333;
+    color: #1a1a2e;
+    font-weight: 800;
+    letter-spacing: 2px;
 }
 
 .subtitle {
     color: #666;
     margin-bottom: 30px;
+    font-size: 0.85em;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .login-form {
@@ -93,12 +98,12 @@ body {
 }
 
 .btn-oni {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
     color: white;
 }
 
 .btn-runner {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
     color: white;
 }
 
@@ -153,10 +158,10 @@ body {
 }
 
 .countdown-number {
-    font-size: 8em;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    font-size: 6em;
+    font-weight: 800;
+    color: #38ef7d;
+    text-shadow: 0 4px 20px rgba(56, 239, 125, 0.5);
     animation: pulse 1s ease-in-out infinite;
 }
 
@@ -180,20 +185,22 @@ body {
 }
 
 #status-bar {
-    background: #333;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     color: white;
-    padding: 10px 15px;
+    padding: 12px 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 #game-timer {
-    font-size: 16px;
-    font-weight: bold;
-    color: #ffd700;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    font-size: 14px;
+    font-weight: 700;
+    color: #38ef7d;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    letter-spacing: 1px;
 }
 
 #game-timer.hidden {
@@ -201,19 +208,23 @@ body {
 }
 
 #role-display {
-    font-weight: bold;
-    font-size: 1.1em;
+    font-weight: 700;
+    font-size: 1em;
+    letter-spacing: 1px;
 }
 
 #area-status {
-    padding: 5px 10px;
-    border-radius: 5px;
-    background: #4caf50;
-    font-size: 0.9em;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: #38ef7d;
+    font-size: 0.85em;
+    font-weight: 600;
+    color: #1a1a2e;
 }
 
 #area-status.outside {
-    background: #f44336;
+    background: #ff4b2b;
+    color: white;
 }
 
 #map {
@@ -222,29 +233,33 @@ body {
 }
 
 #bottom-bar {
-    background: #f5f5f5;
-    padding: 15px;
+    background: #ffffff;
+    padding: 12px 15px;
     text-align: center;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid #e0e0e0;
     z-index: 1000;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .player-list-button {
-    background: #667eea;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     color: white;
     border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
+    padding: 10px 20px;
+    border-radius: 20px;
     font-size: 0.9em;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .player-list-button:hover {
-    background: #5568d3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .player-list-button:active {
@@ -253,14 +268,15 @@ body {
 
 #timer-display,
 #update-display {
-    font-size: 1.1em;
+    font-size: 0.9em;
     flex: 1;
+    color: #333;
 }
 
 #countdown {
-    font-weight: bold;
-    color: #f5576c;
-    font-size: 1.3em;
+    font-weight: 700;
+    color: #ff4b2b;
+    font-size: 1.1em;
 }
 
 .warning {
@@ -268,15 +284,16 @@ body {
     top: 60px;
     left: 50%;
     transform: translateX(-50%);
-    background: #f44336;
+    background: #ff4b2b;
     color: white;
-    padding: 15px 30px;
-    border-radius: 10px;
-    font-weight: bold;
-    font-size: 1.2em;
+    padding: 12px 24px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 1em;
     z-index: 2000;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 5px 20px rgba(255, 75, 43, 0.5);
     animation: shake 0.5s infinite;
+    letter-spacing: 1px;
 }
 
 @keyframes shake {
@@ -298,17 +315,19 @@ body {
 /* 参加者リストパネル */
 .player-list-panel {
     position: fixed;
-    top: 60px;
-    right: 20px;
-    width: 300px;
-    max-height: 70vh;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    top: 50px;
+    right: 10px;
+    width: calc(100% - 20px);
+    max-width: 320px;
+    max-height: 60vh;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     z-index: 2500;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    backdrop-filter: blur(10px);
 }
 
 .player-list-panel.hidden {
@@ -316,7 +335,7 @@ body {
 }
 
 .panel-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     color: white;
     padding: 15px;
     display: flex;
@@ -364,19 +383,22 @@ body {
 }
 
 .player-list-item {
-    padding: 12px;
+    padding: 10px 12px;
     margin: 5px 0;
-    background: #f5f5f5;
-    border-radius: 8px;
+    background: #f8f9fa;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     gap: 10px;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
 }
 
 .player-list-item.self {
-    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
     color: white;
-    font-weight: bold;
+    font-weight: 700;
+    border-left: 3px solid #0d7377;
 }
 
 .player-role-icon {
@@ -437,7 +459,7 @@ body {
 
 /* 確保画面 */
 #captured-screen {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
     color: white;
     display: flex;
     align-items: center;
@@ -445,9 +467,11 @@ body {
 }
 
 .captured-title {
-    font-size: 3rem;
+    font-size: 2.2em;
     margin-bottom: 1rem;
     animation: shake 0.5s;
+    font-weight: 800;
+    letter-spacing: 2px;
 }
 
 @keyframes shake {
@@ -517,7 +541,7 @@ body {
 
 /* ゲーム終了画面 */
 #game-end-screen {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     color: white;
     display: flex;
     align-items: center;
@@ -559,17 +583,20 @@ body {
 }
 
 .result-section {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    padding: 1.5rem;
-    min-width: 250px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 1.2rem;
+    min-width: 200px;
     backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .result-section h2 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     margin-bottom: 1rem;
-    color: #ffd700;
+    color: #38ef7d;
+    font-weight: 700;
+    letter-spacing: 1px;
 }
 
 .winners-list,
@@ -581,19 +608,21 @@ body {
 
 .winners-list li,
 .captured-list li {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.95);
     padding: 0.8rem 1rem;
     margin: 0.5rem 0;
-    border-radius: 8px;
-    font-size: 1.1rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    color: #1a1a2e;
+    font-weight: 600;
 }
 
 .winners-list li {
-    border-left: 4px solid #4caf50;
+    border-left: 4px solid #38ef7d;
 }
 
 .captured-list li {
-    border-left: 4px solid #ff6b6b;
+    border-left: 4px solid #ff4b2b;
 }
 
 .no-players {

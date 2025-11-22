@@ -400,7 +400,7 @@ function addPlayerMarker(playerId, playerData) {
             ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png'
             : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png';
 
-        const colorEmoji = role === 'oni' ? '🔴' : '🔵';
+        const colorEmoji = role === 'oni' ? '●' : '●';
         const statusText = role === 'oni' ? '鬼' : '逃走者';
 
         const icon = L.icon({
@@ -421,7 +421,7 @@ function addPlayerMarker(playerId, playerData) {
         if (currentUser.role === 'oni' && role === 'runner' && !captured) {
             const distance = calculateDistance(currentUser.lat, currentUser.lng, lat, lng);
             if (distance <= 50) { // 50m以内
-                popupContent += `<br><button class="capture-button" onclick="window.capturePlayer('${playerId}', '${username}')">👮 確保する (${Math.round(distance)}m)</button>`;
+                popupContent += `<br><button class="capture-button" onclick="window.capturePlayer('${playerId}', '${username}')">CAPTURE (${Math.round(distance)}m)</button>`;
             } else {
                 popupContent += `<br><small>距離: ${Math.round(distance)}m (50m以内で確保可能)</small>`;
             }
@@ -500,7 +500,7 @@ function updateLastUpdateDisplay(timestamp) {
 // 確保画面
 // ====================
 function showCapturedScreen() {
-    console.log('👮 確保されました by', currentUser.capturedBy);
+    console.log('[確保] 確保されました by', currentUser.capturedBy);
 
     // 位置送信を停止
     if (sendTimer) {
@@ -573,7 +573,7 @@ function updatePlayerListPanel(players) {
 
     // HTML生成
     playerArray.forEach(player => {
-        const roleIcon = player.role === 'oni' ? '🔴' : '🔵';
+        const roleIcon = player.role === 'oni' ? '●' : '●';
         const roleText = player.role === 'oni' ? '鬼' : '逃走者';
         const selfClass = player.isSelf ? ' self' : '';
         const selfLabel = player.isSelf ? ' (自分)' : '';
@@ -729,7 +729,7 @@ function updateGameTimer() {
         return;
     }
 
-    console.log('⏰ ゲームタイマー開始:', new Date(gameState.endTime).toLocaleString());
+    console.log('[TIMER] ゲームタイマー開始:', new Date(gameState.endTime).toLocaleString());
 
     // タイマーを表示
     timerElement.classList.remove('hidden');
@@ -740,7 +740,7 @@ function updateGameTimer() {
         const remaining = gameState.endTime - now;
 
         if (remaining <= 0) {
-            timerElement.textContent = '⏰ 時間切れ';
+            timerElement.textContent = 'TIME UP';
             if (gameTimerInterval) {
                 clearInterval(gameTimerInterval);
                 gameTimerInterval = null;
@@ -750,7 +750,7 @@ function updateGameTimer() {
 
         const minutes = Math.floor(remaining / 60000);
         const seconds = Math.floor((remaining % 60000) / 1000);
-        timerElement.textContent = `⏰ 残り ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
 
     updateTimer(); // 初回実行
@@ -821,7 +821,7 @@ function hideWaitingOverlay() {
 }
 
 function showGameEndMessage() {
-    console.log('🏁 ゲーム終了画面を表示');
+    console.log('[GAME END] ゲーム終了画面を表示');
 
     // タイマーをクリア
     if (gameTimerInterval) {
@@ -880,14 +880,14 @@ function displayGameResults(players) {
 
     // 逃走成功者を表示
     if (winners.length > 0) {
-        winnersList.innerHTML = winners.map(name => `<li>🎉 ${name}</li>`).join('');
+        winnersList.innerHTML = winners.map(name => `<li>${name}</li>`).join('');
     } else {
         winnersList.innerHTML = '<p class="no-players">逃走成功者なし</p>';
     }
 
     // 確保されたプレイヤーを表示
     if (captured.length > 0) {
-        capturedList.innerHTML = captured.map(name => `<li>👮 ${name}</li>`).join('');
+        capturedList.innerHTML = captured.map(name => `<li>${name}</li>`).join('');
     } else {
         capturedList.innerHTML = '<p class="no-players">確保されたプレイヤーなし</p>';
     }
@@ -1003,7 +1003,7 @@ function updatePlayerList(players) {
 
     let html = '';
     Object.entries(players).forEach(([playerId, playerData]) => {
-        const roleEmoji = playerData.role === 'oni' ? '🔴' : '🔵';
+        const roleEmoji = playerData.role === 'oni' ? '●' : '●';
         const roleText = playerData.role === 'oni' ? '鬼' : '逃走者';
         const lastUpdate = new Date(playerData.updated_at).toLocaleTimeString();
 

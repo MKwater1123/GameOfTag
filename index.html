@@ -11,8 +11,8 @@
 <body>
     <div id="login-screen" class="screen">
         <div class="container">
-            <h1 class="title">ミズノ鬼ごっこ</h1>
-            <p class="subtitle">リアル鬼ごっこゲーム</p>
+            <h1 class="title">MIZUNO TAG</h1>
+            <p class="subtitle">REAL-TIME GPS TAG GAME</p>
 
             <div class="login-form">
                 <input type="text" id="username" placeholder="名前を入力（例：タナカ）" maxlength="20" required>
@@ -23,7 +23,7 @@
                 </div>
 
                 <div class="admin-link">
-                    <button id="admin-login-btn" class="btn-link">🔒 管理者ログイン</button>
+                    <button id="admin-login-btn" class="btn-link">管理者</button>
                 </div>
             </div>
         </div>
@@ -33,7 +33,7 @@
         <!-- 待機/カウントダウン画面 -->
         <div id="waiting-overlay" class="waiting-overlay">
             <div class="waiting-content">
-                <h1 id="waiting-title">⏳ ゲーム開始を待っています</h1>
+                <h1 id="waiting-title">待機中</h1>
                 <p id="waiting-message">管理者がゲームを開始するまでお待ちください</p>
                 <div id="countdown-display" class="countdown-display hidden">
                     <div class="countdown-number" id="countdown-number">10</div>
@@ -44,7 +44,7 @@
 
         <div id="status-bar">
             <span id="role-display"></span>
-            <span id="game-timer" class="hidden">⏰ 残り --:--</span>
+            <span id="game-timer" class="hidden">残り --:--</span>
             <span id="area-status">エリア内</span>
         </div>
 
@@ -58,20 +58,20 @@
             <div id="update-display" class="hidden">
                 <span>最終更新: <span id="last-update">--</span></span>
             </div>
-            <button id="player-list-btn" class="player-list-button">👥 参加者</button>
+            <button id="player-list-btn" class="player-list-button">参加者</button>
         </div>
 
         <!-- 参加者リストパネル -->
         <div id="player-list-panel" class="player-list-panel hidden">
             <div class="panel-header">
-                <h3>👥 参加者リスト</h3>
+                <h3>参加者リスト</h3>
                 <button id="close-player-list" class="close-btn">✕</button>
             </div>
             <div id="player-list-items" class="player-list-items"></div>
         </div>
 
         <div id="area-warning" class="warning hidden">
-            ⚠️ 警告：エリア外です！
+            警告：エリア外
         </div>
     </div>
 
@@ -79,7 +79,7 @@
     <!-- 確保された画面 -->
     <div id="captured-screen" class="screen hidden">
         <div class="container">
-            <h1 class="title captured-title">👮 確保されました</h1>
+            <h1 class="title captured-title">確保されました</h1>
             <p class="captured-message">あなたは鬼に捕まりました！</p>
             <p class="captured-by">捕まえた鬼: <span id="captured-by-name"></span></p>
             <p class="subtitle">ゲームが終了するまでお待ちください</p>
@@ -89,14 +89,14 @@
     <!-- ゲーム終了画面 -->
     <div id="game-end-screen" class="screen hidden">
         <div class="container">
-            <h1 class="title game-end-title">🏁 ゲーム終了</h1>
+            <h1 class="title game-end-title">ゲーム終了</h1>
             <div class="game-results">
                 <div class="result-section">
-                    <h2>🎉 逃走成功者</h2>
+                    <h2>逃走成功</h2>
                     <div id="winners-list" class="winners-list"></div>
                 </div>
                 <div class="result-section">
-                    <h2>👮 確保されたプレイヤー</h2>
+                    <h2>確保済み</h2>
                     <div id="captured-list" class="captured-list"></div>
                 </div>
             </div>
@@ -106,7 +106,7 @@
 
     <div id="admin-screen" class="screen hidden">
         <div class="container admin-container">
-            <h1 class="title">🔒 管理者パネル</h1>
+            <h1 class="title">管理者パネル</h1>
 
             <!-- パスワード入力 -->
             <div id="admin-login" class="admin-section">

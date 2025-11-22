@@ -8,10 +8,14 @@ let playerMarkers = {};
 let currentUser = {
     id: null,
     username: '',
-    role: '', // 'oni' or 'runner'
+    role: '', // 'oni' or 'runner' or 'admin'
     lat: null,
     lng: null
 };
+
+// 管理者設定
+const ADMIN_PASSWORD = 'kotaro1123'; // 本番環境では変更してください
+let isAdmin = false;
 
 // ゲーム設定（鹿児島高専を中心に半径1km）
 const GAME_SETTINGS = {
@@ -69,9 +73,11 @@ function setupLoginScreen() {
     const usernameInput = document.getElementById('username');
     const joinOniBtn = document.getElementById('join-oni');
     const joinRunnerBtn = document.getElementById('join-runner');
+    const adminLoginBtn = document.getElementById('admin-login-btn');
 
     joinOniBtn.addEventListener('click', () => joinGame('oni'));
     joinRunnerBtn.addEventListener('click', () => joinGame('runner'));
+    adminLoginBtn.addEventListener('click', showAdminLogin);
 
     // Enterキーでも参加可能
     usernameInput.addEventListener('keypress', (e) => {
@@ -79,6 +85,9 @@ function setupLoginScreen() {
             joinGame('runner'); // デフォルトは逃走者
         }
     });
+
+    // 管理者画面のセットアップ
+    setupAdminScreen();
 }
 
 function joinGame(role) {
@@ -477,3 +486,187 @@ function formatTime(timestamp) {
     const date = new Date(timestamp);
     return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
+
+// ====================
+// 管理者機能
+// ====================
+function showAdminLogin() {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('admin-screen').classList.remove('hidden');
+    console.log('🔒 管理者ログイン画面を表示');
+}
+
+function setupAdminScreen() {
+    const adminAuthBtn = document.getElementById('admin-auth-btn');
+    const adminBackBtn = document.getElementById('admin-back-btn');
+    const adminLogoutBtn = document.getElementById('admin-logout-btn');
+    const startGameBtn = document.getElementById('start-game-btn');
+    const endGameBtn = document.getElementById('end-game-btn');
+    const clearPlayersBtn = document.getElementById('clear-players-btn');
+    const passwordInput = document.getElementById('admin-password');
+
+    // 認証
+    adminAuthBtn.addEventListener('click', () => authenticateAdmin());
+
+    // Enterキーで認証
+    passwordInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            authenticateAdmin();
+        }
+    });
+
+    // 戻るボタン
+    adminBackBtn.addEventListener('click', () => {
+        document.getElementById('admin-screen').classList.add('hidden');
+        document.getElementById('login-screen').classList.remove('hidden');
+    });
+
+    // ログアウト
+    adminLogoutBtn.addEventListener('click', () => {
+        isAdmin = false;
+        document.getElementById('admin-panel').classList.add('hidden');
+        document.getElementById('admin-login').classList.remove('hidden');
+        document.getElementById('admin-password').value = '';
+        console.log('👋 管理者ログアウト');
+    });
+
+    // ゲーム開始
+    startGameBtn.addEventListener('click', () => startGame());
+
+    // ゲーム終了
+    endGameBtn.addEventListener('click', () => endGame());
+
+    // 全プレイヤークリア
+    clearPlayersBtn.addEventListener('click', () => clearAllPlayers());
+}
+
+function authenticateAdmin() {
+    const password = document.getElementById('admin-password').value;
+
+    if (password === ADMIN_PASSWORD) {
+        isAdmin = true;
+        console.log('✅ 管理者認証成功');
+        document.getElementById('admin-login').classList.add('hidden');
+        document.getElementById('admin-panel').classList.remove('hidden');
+
+        // プレイヤー情報の監視開始
+        watchPlayersForAdmin();
+    } else {
+        alert('パスワードが違います');
+        console.log('❌ 管理者認証失敗');
+    }
+}
+
+function watchPlayersForAdmin() {
+    if (!playersRef) return;
+
+    playersRef.on('value', (snapshot) => {
+        const players = snapshot.val();
+        updateAdminStats(players);
+        updatePlayerList(players);
+    });
+}
+
+function updateAdminStats(players) {
+    if (!players) {
+        document.getElementById('total-players').textContent = '0';
+        document.getElementById('oni-count').textContent = '0';
+        document.getElementById('runner-count').textContent = '0';
+        return;
+    }
+
+    const playerArray = Object.values(players);
+    const totalPlayers = playerArray.length;
+    const oniCount = playerArray.filter(p => p.role === 'oni').length;
+    const runnerCount = playerArray.filter(p => p.role === 'runner').length;
+
+    document.getElementById('total-players').textContent = totalPlayers;
+    document.getElementById('oni-count').textContent = oniCount;
+    document.getElementById('runner-count').textContent = runnerCount;
+}
+
+function updatePlayerList(players) {
+    const listContent = document.getElementById('player-list-content');
+
+    if (!players) {
+        listContent.innerHTML = '<p>プレイヤーがいません</p>';
+        return;
+    }
+
+    let html = '';
+    Object.entries(players).forEach(([playerId, playerData]) => {
+        const roleEmoji = playerData.role === 'oni' ? '🔴' : '🔵';
+        const roleText = playerData.role === 'oni' ? '鬼' : '逃走者';
+        const lastUpdate = new Date(playerData.updated_at).toLocaleTimeString();
+
+        html += `
+            <div class="player-item">
+                <div class="player-info">
+                    <div class="player-name">${roleEmoji} ${playerData.username}</div>
+                    <div class="player-role">${roleText} - 最終更新: ${lastUpdate}</div>
+                </div>
+                <div class="player-actions">
+                    <button class="btn-small btn-kick" onclick="kickPlayer('${playerId}')">削除</button>
+                </div>
+            </div>
+        `;
+    });
+
+    listContent.innerHTML = html;
+}
+
+function kickPlayer(playerId) {
+    if (!confirm('このプレイヤーを削除しますか？')) return;
+
+    playersRef.child(playerId).remove()
+        .then(() => {
+            console.log('✅ プレイヤーを削除しました:', playerId);
+            alert('プレイヤーを削除しました');
+        })
+        .catch((error) => {
+            console.error('❌ プレイヤー削除エラー:', error);
+            alert('削除に失敗しました');
+        });
+}
+
+function startGame() {
+    database.ref('game_session_v1/status').set('active')
+        .then(() => {
+            console.log('✅ ゲーム開始');
+            alert('ゲームを開始しました！');
+        })
+        .catch((error) => {
+            console.error('❌ ゲーム開始エラー:', error);
+        });
+}
+
+function endGame() {
+    if (!confirm('ゲームを終了しますか？')) return;
+
+    database.ref('game_session_v1/status').set('ended')
+        .then(() => {
+            console.log('✅ ゲーム終了');
+            alert('ゲームを終了しました');
+        })
+        .catch((error) => {
+            console.error('❌ ゲーム終了エラー:', error);
+        });
+}
+
+function clearAllPlayers() {
+    if (!confirm('全プレイヤーのデータを削除しますか？この操作は取り消せません。')) return;
+
+    playersRef.remove()
+        .then(() => {
+            console.log('✅ 全プレイヤーをクリア');
+            alert('全プレイヤーをクリアしました');
+        })
+        .catch((error) => {
+            console.error('❌ プレイヤークリアエラー:', error);
+            alert('クリアに失敗しました');
+        });
+}
+
+// グローバルスコープに公開（HTML内のonclick用）
+window.kickPlayer = kickPlayer;
+

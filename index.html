@@ -21,6 +21,10 @@
                     <button id="join-oni" class="btn btn-oni">鬼で参加</button>
                     <button id="join-runner" class="btn btn-runner">逃走者で参加</button>
                 </div>
+
+                <div class="admin-link">
+                    <button id="admin-login-btn" class="btn-link">🔒 管理者ログイン</button>
+                </div>
             </div>
         </div>
     </div>
@@ -45,6 +49,55 @@
 
         <div id="area-warning" class="warning hidden">
             ⚠️ 警告：エリア外です！
+        </div>
+    </div>
+
+    <!-- 管理者画面 -->
+    <div id="admin-screen" class="screen hidden">
+        <div class="container admin-container">
+            <h1 class="title">🔒 管理者パネル</h1>
+
+            <!-- パスワード入力 -->
+            <div id="admin-login" class="admin-section">
+                <h2>ログイン</h2>
+                <input type="password" id="admin-password" placeholder="管理者パスワード" maxlength="50">
+                <button id="admin-auth-btn" class="btn btn-primary">ログイン</button>
+                <button id="admin-back-btn" class="btn btn-secondary">戻る</button>
+            </div>
+
+            <!-- 管理パネル -->
+            <div id="admin-panel" class="admin-section hidden">
+                <h2>ゲーム管理</h2>
+
+                <div class="admin-stats">
+                    <div class="stat-card">
+                        <h3>参加者数</h3>
+                        <p id="total-players" class="stat-number">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>鬼</h3>
+                        <p id="oni-count" class="stat-number">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>逃走者</h3>
+                        <p id="runner-count" class="stat-number">0</p>
+                    </div>
+                </div>
+
+                <div class="admin-controls">
+                    <h3>ゲームコントロール</h3>
+                    <button id="start-game-btn" class="btn btn-success">ゲーム開始</button>
+                    <button id="end-game-btn" class="btn btn-danger">ゲーム終了</button>
+                    <button id="clear-players-btn" class="btn btn-warning">全プレイヤークリア</button>
+                </div>
+
+                <div class="player-list">
+                    <h3>プレイヤー一覧</h3>
+                    <div id="player-list-content"></div>
+                </div>
+
+                <button id="admin-logout-btn" class="btn btn-secondary">ログアウト</button>
+            </div>
         </div>
     </div>
 

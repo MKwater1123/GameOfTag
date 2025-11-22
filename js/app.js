@@ -11,7 +11,9 @@ let currentUser = {
     username: '',
     role: '', // 'oni' or 'runner' or 'admin'
     lat: null,
-    lng: null
+    lng: null,
+    captured: false,
+    capturedBy: null
 };
 
 // 管理者設定
@@ -339,6 +341,14 @@ function watchPlayers() {
 
         let latestRunnerUpdate = 0;
 
+        // 自分が確保されたかチェック
+        if (currentUser.id && players[currentUser.id] && players[currentUser.id].captured && !currentUser.captured) {
+            currentUser.captured = true;
+            currentUser.capturedBy = players[currentUser.id].capturedBy;
+            showCapturedScreen();
+            return;
+        }
+
         Object.entries(players).forEach(([playerId, playerData]) => {
             if (playerId === currentUser.id) return; // 自分は表示済み
             if (currentUser.role === 'runner' && playerData.role === 'oni') return; // 逃走者は鬼非表示
@@ -367,7 +377,7 @@ function watchPlayers() {
 }
 
 function addPlayerMarker(playerId, playerData) {
-    const { username, role, lat, lng, updated_at } = playerData;
+    const { username, role, lat, lng, updated_at, captured } = playerData;
 
 
     if (!map) {
@@ -381,12 +391,18 @@ function addPlayerMarker(playerId, playerData) {
     }
 
     try {
-        // アイコン色選択: 鬼=赤、逃走者=青
-        const colorUrl = role === 'oni'
-            ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png'
-            : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png';
+        // アイコン色選択: 鬼=赤、逃走者=青、確保済み=グレー
+        let colorUrl;
+        if (captured) {
+            colorUrl = 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png';
+        } else {
+            colorUrl = role === 'oni'
+                ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png'
+                : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png';
+        }
 
-        const colorEmoji = role === 'oni' ? '🔴' : '🔵';
+        const colorEmoji = captured ? '⚫' : (role === 'oni' ? '🔴' : '🔵');
+        const statusText = captured ? '(確保済み)' : (role === 'oni' ? '鬼' : '逃走者');
 
         const icon = L.icon({
             iconUrl: colorUrl,
@@ -397,16 +413,66 @@ function addPlayerMarker(playerId, playerData) {
             shadowSize: [41, 41]
         });
 
-        const marker = L.marker([lat, lng], { icon })
-            .addTo(map)
-            .bindPopup(`<b>${colorEmoji} ${username}</b><br>${role === 'oni' ? '鬼' : '逃走者'}<br>更新: ${formatTime(updated_at)}`);
+        const marker = L.marker([lat, lng], { icon }).addTo(map);
 
+        // ポップアップ内容を構築
+        let popupContent = `<b>${colorEmoji} ${username}</b><br>${statusText}<br>更新: ${formatTime(updated_at)}`;
+
+        // 鬼の場合、逃走者に確保ボタンを追加
+        if (currentUser.role === 'oni' && role === 'runner' && !captured) {
+            const distance = calculateDistance(currentUser.lat, currentUser.lng, lat, lng);
+            if (distance <= 50) { // 50m以内
+                popupContent += `<br><button class="capture-button" onclick="window.capturePlayer('${playerId}', '${username}')">👮 確保する (${Math.round(distance)}m)</button>`;
+            } else {
+                popupContent += `<br><small>距離: ${Math.round(distance)}m (50m以内で確保可能)</small>`;
+            }
+        }
+
+        marker.bindPopup(popupContent);
         playerMarkers[playerId] = marker;
         // マーカー追加成功
     } catch (error) {
         console.error('❌ マーカー追加エラー:', error);
     }
 }
+
+// 距離計算（メートル）
+function calculateDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371e3; // 地球の半径（メートル）
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lng2 - lng1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) *
+        Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+}
+
+// 確保処理（グローバルスコープに公開）
+window.capturePlayer = function (playerId, username) {
+    if (currentUser.role !== 'oni') {
+        alert('鬼のみが確保できます');
+        return;
+    }
+
+    if (!playersRef) return;
+
+    playersRef.child(playerId).update({
+        captured: true,
+        capturedBy: currentUser.username,
+        capturedAt: Date.now()
+    }).then(() => {
+        console.log(`✅ ${username} を確保しました`);
+        alert(`${username} を確保しました！`);
+    }).catch(error => {
+        console.error('確保エラー:', error);
+        alert('確保に失敗しました');
+    });
+};
 
 function formatTime(timestamp) {
     const date = new Date(timestamp);
@@ -418,6 +484,29 @@ function updateLastUpdateDisplay(timestamp) {
     if (lastUpdateEl) {
         lastUpdateEl.textContent = formatTime(timestamp);
     }
+}
+
+// ====================
+// 確保画面
+// ====================
+function showCapturedScreen() {
+    // 位置送信を停止
+    if (sendTimer) {
+        clearInterval(sendTimer);
+        sendTimer = null;
+    }
+
+    // GPS監視を停止
+    if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+    }
+
+    // 画面を切り替え
+    document.getElementById('map-screen').classList.add('hidden');
+    document.getElementById('captured-screen').classList.remove('hidden');
+    document.getElementById('captured-by-name').textContent = currentUser.capturedBy || '不明';
+
+    console.log('👮 確保されました by', currentUser.capturedBy);
 }
 
 // ====================
@@ -456,10 +545,6 @@ function updatePlayerListPanel(players) {
     if (players) {
         Object.entries(players).forEach(([playerId, playerData]) => {
             if (playerId !== currentUser.id) {
-                // 逃走者の場合、鬼の情報は表示しない
-                if (currentUser.role === 'runner' && playerData.role === 'oni') {
-                    return;
-                }
                 playerArray.push({
                     id: playerId,
                     username: playerData.username,

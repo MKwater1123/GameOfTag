@@ -424,6 +424,86 @@ body {
     text-decoration: underline;
 }
 
+/* 確保画面 */
+#captured-screen {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.captured-title {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    animation: shake 0.5s;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-10px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(10px);
+    }
+}
+
+.captured-message {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.captured-by {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+}
+
+#captured-by-name {
+    font-weight: bold;
+    color: #ffd700;
+}
+
+/* 確保ボタン */
+.capture-button {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+    transition: all 0.3s ease;
+    margin-top: 8px;
+}
+
+.capture-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+}
+
+.capture-button:active {
+    transform: translateY(0);
+}
+
 /* 管理者画面 */
 #admin-screen {
     background: linear-gradient(135deg, #434343 0%, #000000 100%);

@@ -849,8 +849,11 @@ function showGameEndMessage() {
         });
     }
 
-    // 画面を切り替え
+    // すべての画面を非表示にしてから終了画面を表示
+    document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('map-screen').classList.add('hidden');
+    document.getElementById('captured-screen').classList.add('hidden');
+    document.getElementById('admin-screen').classList.add('hidden');
     document.getElementById('game-end-screen').classList.remove('hidden');
 }
 

@@ -1161,6 +1161,57 @@ body {
     animation: bounceIn 1s ease;
 }
 
+/* 勝利メッセージ */
+.game-winner-message {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem 2rem;
+    background: var(--glass-bg);
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--glass-border);
+    animation: fadeInUp 0.5s ease;
+}
+
+.game-winner-message.hidden {
+    display: none;
+}
+
+.game-winner-message .oni-win {
+    display: block;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent-red);
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 20px rgba(255, 51, 102, 0.5);
+}
+
+.game-winner-message .runner-win {
+    display: block;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent-green);
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+}
+
+.game-winner-message p {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 @keyframes bounceIn {
     0% {
         transform: scale(0.5);

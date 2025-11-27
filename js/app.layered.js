@@ -408,6 +408,11 @@ function watchPlayers() {
 
             // 参加者リスト更新
             playerListUI.update(players, user);
+
+            // 逃走者が0人になったかチェック（ゲームアクティブ時のみ）
+            if (gameService.isGameActive()) {
+                checkAllRunnersCaptured(players);
+            }
         },
         (error) => console.error('Players watch error:', error)
     );
@@ -478,7 +483,9 @@ function handleGameStatusChange(data) {
             gameService.stopLocationSending();
             screensUI.stopGameTimer();
             firebaseService.getPlayersOnce().then((players) => {
-                screensUI.showGameEndScreen(players);
+                // winnerを取得して渡す
+                const winner = data.winner || null;
+                screensUI.showGameEndScreen(players, winner);
                 // 管理者の場合はリセットセクションを表示
                 showAdminResetSection(isAdmin);
             });
@@ -841,6 +848,44 @@ function endGame() {
             alert('ゲームを終了しました');
         })
         .catch(error => console.error('End game error:', error));
+}
+
+// 逃走者が0人になったかチェック
+function checkAllRunnersCaptured(players) {
+    if (!players) return;
+
+    // アクティブな逃走者をカウント
+    let activeRunners = 0;
+    let totalRunners = 0;
+
+    Object.values(players).forEach(playerData => {
+        // 元々の逃走者をカウント（鬼化された人は除く）
+        if (playerData.role === ROLES.RUNNER && !playerData.onified) {
+            totalRunners++;
+            // 確保されていない、失格でもない逃走者
+            if (!playerData.captured && !playerData.disqualified) {
+                activeRunners++;
+            }
+        }
+    });
+
+    logDebug('App', 'Runner check', { activeRunners, totalRunners });
+
+    // 逃走者が1人以上いて、かつ全員確保/失格された場合
+    if (totalRunners > 0 && activeRunners === 0) {
+        logDebug('App', 'All runners captured - Oni wins!');
+
+        // ゲーム終了（鬼の勝利）
+        firebaseService.updateGameStatus({
+            status: GAME_STATUS.ENDED,
+            endTime: Date.now(),
+            winner: 'oni'
+        })
+            .then(() => {
+                logDebug('App', 'Game ended - Oni victory');
+            })
+            .catch(error => console.error('End game error:', error));
+    }
 }
 
 function clearAllPlayers() {

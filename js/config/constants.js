@@ -3,11 +3,11 @@
  * レイヤードアーキテクチャ: Config Layer
  */
 
-// ゲームエリア設定（鹿児島高専を中心に半径3km）
+// ゲームエリア設定（鹿児島高専を中心に半径2km）
 export const GAME_AREA = {
     CENTER_LAT: 31.731222,
     CENTER_LNG: 130.728778,
-    RADIUS_METER: 3000
+    RADIUS_METER: 2000
 };
 
 // 位置情報送信間隔（ミリ秒）
@@ -21,7 +21,7 @@ export const SEND_INTERVALS = {
 export const GAME_CONFIG = {
     DEFAULT_DURATION_MS: 30 * 60 * 1000,  // デフォルト: 30分
     COUNTDOWN_SECONDS: 10,                 // カウントダウン: 10秒
-    CAPTURE_RADIUS_METER: 10,              // 捕獲可能距離: 10m
+    CAPTURE_RADIUS_METER: 20,              // 捕獲可能距離: 20m
     OUTSIDE_AREA_LIMIT_SECONDS: 30,        // エリア外失格までの時間: 30秒
     MAX_EVENTS: 50                         // イベント最大保持数
 };

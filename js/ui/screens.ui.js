@@ -139,9 +139,10 @@ class ScreensUI {
     /**
      * ゲーム終了画面を表示
      * @param {Object} players - プレイヤーデータ
+     * @param {string} winner - 勝利者 ('oni', 'runners', または null)
      */
-    showGameEndScreen(players) {
-        this._displayGameResults(players);
+    showGameEndScreen(players, winner = null) {
+        this._displayGameResults(players, winner);
         this.showScreen('gameEnd');
     }
 
@@ -403,7 +404,8 @@ class ScreensUI {
     // プライベートメソッド
     // =====================
 
-    _displayGameResults(players) {
+    _displayGameResults(players, winner = null) {
+        const winnerMessage = document.getElementById('game-winner-message');
         const winnersList = document.getElementById('winners-list');
         const capturedList = document.getElementById('captured-list');
         const disqualifiedList = document.getElementById('disqualified-list');
@@ -416,7 +418,8 @@ class ScreensUI {
 
         if (players) {
             Object.entries(players).forEach(([_, playerData]) => {
-                if (playerData.role === ROLES.RUNNER) {
+                // 元々の逃走者をチェック（鬼化されていない人）
+                if (playerData.role === ROLES.RUNNER && !playerData.onified) {
                     if (playerData.disqualified) {
                         disqualified.push(playerData.username);
                     } else if (playerData.captured) {
@@ -426,6 +429,19 @@ class ScreensUI {
                     }
                 }
             });
+        }
+
+        // 勝利メッセージを表示
+        if (winnerMessage) {
+            if (winner === 'oni') {
+                winnerMessage.innerHTML = '<span class="oni-win">👹 鬼の勝利！</span><p>全ての逃走者を確保しました！</p>';
+                winnerMessage.classList.remove('hidden');
+            } else if (winners.length > 0) {
+                winnerMessage.innerHTML = '<span class="runner-win">🏃 逃走者の勝利！</span><p>時間内に逃げ切りました！</p>';
+                winnerMessage.classList.remove('hidden');
+            } else {
+                winnerMessage.classList.add('hidden');
+            }
         }
 
         winnersList.innerHTML = winners.length > 0
@@ -443,7 +459,8 @@ class ScreensUI {
         logDebug('ScreensUI', 'Game results', {
             winners: winners.length,
             captured: captured.length,
-            disqualified: disqualified.length
+            disqualified: disqualified.length,
+            winner: winner
         });
     }
 }

@@ -290,6 +290,71 @@ class ScreensUI {
     }
 
     // =====================
+    // イベントポップアップ
+    // =====================
+
+    /**
+     * イベントポップアップを表示
+     * @param {string} icon - アイコン絵文字
+     * @param {string} title - タイトル
+     * @param {string} message - メッセージ
+     * @param {string} type - イベントタイプ（shrink, onification, become-oni）
+     */
+    showEventPopup(icon, title, message, type = '') {
+        const popup = document.getElementById('event-popup');
+        const iconEl = document.getElementById('event-popup-icon');
+        const titleEl = document.getElementById('event-popup-title');
+        const messageEl = document.getElementById('event-popup-message');
+        const closeBtn = document.getElementById('event-popup-close');
+
+        if (!popup) return;
+
+        // 前のタイプクラスを削除
+        popup.classList.remove('shrink', 'onification', 'become-oni');
+
+        // 新しいタイプクラスを追加
+        if (type) {
+            popup.classList.add(type);
+        }
+
+        // コンテンツを設定
+        if (iconEl) iconEl.textContent = icon;
+        if (titleEl) titleEl.textContent = title;
+        if (messageEl) messageEl.textContent = message;
+
+        // ポップアップを表示
+        popup.classList.remove('hidden');
+
+        // 閉じるボタンのイベントリスナー（既存を削除してから追加）
+        if (closeBtn) {
+            const newCloseBtn = closeBtn.cloneNode(true);
+            closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+            newCloseBtn.addEventListener('click', () => this.hideEventPopup());
+        }
+
+        // オーバーレイクリックで閉じる
+        const overlay = popup.querySelector('.event-popup-overlay');
+        if (overlay) {
+            const newOverlay = overlay.cloneNode(true);
+            overlay.parentNode.replaceChild(newOverlay, overlay);
+            newOverlay.addEventListener('click', () => this.hideEventPopup());
+        }
+
+        logDebug('ScreensUI', `Event popup shown: ${title}`, { type });
+    }
+
+    /**
+     * イベントポップアップを非表示
+     */
+    hideEventPopup() {
+        const popup = document.getElementById('event-popup');
+        if (popup) {
+            popup.classList.add('hidden');
+            logDebug('ScreensUI', 'Event popup hidden');
+        }
+    }
+
+    // =====================
     // ゲームタイマー
     // =====================
 

@@ -286,6 +286,14 @@ function setupGameCallbacks() {
             `⚠️ 安全地帯が縮小を開始しました！現在の半径${currentRadius}mから、30分かけて毎秒1mずつ縮小します。最小半径は500mです。`,
             EVENT_TYPES.IMPORTANT
         );
+
+        // ポップアップ表示
+        screensUI.showEventPopup(
+            '⚠️',
+            '安全地帯の縮小開始',
+            `現在の半径${currentRadius}mから、30分かけて毎秒1mずつ縮小します。最小半径は500mです。エリア内に留まりましょう！`,
+            'shrink'
+        );
     };
 
     // 縮小イベント更新
@@ -312,6 +320,14 @@ function setupGameCallbacks() {
             `👹 鬼化イベント発動！確保済み・失格のプレイヤーが鬼として復活します！`,
             EVENT_TYPES.IMPORTANT
         );
+
+        // ポップアップ表示
+        screensUI.showEventPopup(
+            '👹',
+            '鬼化イベント発動',
+            '確保済み・失格のプレイヤーが鬼として復活します！逃走者は注意してください！',
+            'onification'
+        );
     };
 
     // 自分が鬼化された時
@@ -320,6 +336,15 @@ function setupGameCallbacks() {
             `👹 あなたは鬼になりました！逃走者を捕まえましょう！`,
             EVENT_TYPES.IMPORTANT
         );
+
+        // ポップアップ表示
+        screensUI.showEventPopup(
+            '👹',
+            'あなたは鬼になりました！',
+            '復活しました！逃走者を捕まえて仲間を増やしましょう！',
+            'become-oni'
+        );
+
         screensUI.updateRoleDisplay(ROLES.ONI);
         // 確保・失格画面から復帰
         screensUI.showScreen('map');

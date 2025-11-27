@@ -77,7 +77,8 @@ body {
     min-height: 100vh;
     min-height: 100dvh;
     /* Dynamic viewport height for mobile */
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     background: var(--primary-dark);
     color: var(--text-primary);
     line-height: 1.6;
@@ -88,6 +89,7 @@ body {
     min-height: 100vh;
     min-height: 100dvh;
     padding-top: env(safe-area-inset-top);
+    overflow-y: auto;
 }
 
 .hidden {

@@ -54,6 +54,9 @@ function initializeApp() {
     // ログイン画面のセットアップ
     setupLoginScreen();
 
+    // ゲーム終了画面のセットアップ
+    setupGameEndScreen();
+
     // ゲーム状態の監視開始
     watchGameStatus();
 }
@@ -370,6 +373,8 @@ function handleGameStatusChange(data) {
             screensUI.stopGameTimer();
             firebaseService.getPlayersOnce().then((players) => {
                 screensUI.showGameEndScreen(players);
+                // 管理者の場合はリセットセクションを表示
+                showAdminResetSection(isAdmin);
             });
             break;
 
@@ -399,6 +404,149 @@ window.capturePlayer = function (playerId, username) {
             alert('確保に失敗しました: ' + error.message);
         });
 };
+
+// =====================
+// ゲーム終了画面
+// =====================
+function setupGameEndScreen() {
+    // ログイン画面に戻るボタン（ゲーム終了画面）
+    const backToLoginBtn = document.getElementById('back-to-login-btn');
+    if (backToLoginBtn) {
+        backToLoginBtn.addEventListener('click', backToLoginScreen);
+    }
+
+    // ログイン画面に戻るボタン（確保画面）
+    const capturedBackBtn = document.getElementById('captured-back-to-login-btn');
+    if (capturedBackBtn) {
+        capturedBackBtn.addEventListener('click', backToLoginScreen);
+    }
+
+    // ログイン画面に戻るボタン（失格画面）
+    const disqualifiedBackBtn = document.getElementById('disqualified-back-to-login-btn');
+    if (disqualifiedBackBtn) {
+        disqualifiedBackBtn.addEventListener('click', backToLoginScreen);
+    }
+
+    // 管理者用リセットボタン
+    const resetGameBtn = document.getElementById('reset-game-btn');
+    const clearAllDataBtn = document.getElementById('clear-all-data-btn');
+
+    if (resetGameBtn) {
+        resetGameBtn.addEventListener('click', resetGameForContinue);
+    }
+
+    if (clearAllDataBtn) {
+        clearAllDataBtn.addEventListener('click', clearAllGameData);
+    }
+}
+
+/**
+ * ログイン画面に戻る
+ */
+function backToLoginScreen() {
+    // ゲームサービスをクリーンアップ
+    gameService.cleanup();
+    // ログイン画面に戻る
+    screensUI.showScreen('login');
+    showAuthChoice();
+}
+
+/**
+ * 管理者リセットセクションの表示/非表示
+ * @param {boolean} show - 表示するかどうか
+ */
+function showAdminResetSection(show) {
+    const adminSection = document.getElementById('admin-reset-section');
+    if (adminSection) {
+        if (show) {
+            adminSection.classList.remove('hidden');
+        } else {
+            adminSection.classList.add('hidden');
+        }
+    }
+}
+
+/**
+ * ゲームをリセット（プレイヤーデータ保持、ステータスのみリセット）
+ */
+function resetGameForContinue() {
+    if (!confirm('ゲームをリセットして新しいゲームを開始しますか？\n（プレイヤーデータは保持されます）')) {
+        return;
+    }
+
+    // プレイヤーの確保・失格状態をリセット
+    firebaseService.getPlayersOnce()
+        .then((players) => {
+            if (!players) return Promise.resolve();
+
+            const resetPromises = Object.keys(players).map(playerId => {
+                return firebaseService.updatePlayerLocation(playerId, {
+                    ...players[playerId],
+                    captured: false,
+                    capturedBy: null,
+                    capturedAt: null,
+                    disqualified: false,
+                    disqualifiedReason: null,
+                    disqualifiedAt: null,
+                    updated_at: Date.now()
+                });
+            });
+
+            return Promise.all(resetPromises);
+        })
+        .then(() => {
+            // ゲームステータスを待機中に戻す
+            return firebaseService.setGameStatus({
+                status: GAME_STATUS.WAITING,
+                startTime: null,
+                endTime: null,
+                duration: null
+            });
+        })
+        .then(() => {
+            logDebug('App', 'Game reset for continue');
+            alert('ゲームをリセットしました。管理画面から新しいゲームを開始できます。');
+            screensUI.showScreen('admin');
+        })
+        .catch(error => {
+            console.error('Reset error:', error);
+            alert('リセットに失敗しました: ' + error.message);
+        });
+}
+
+/**
+ * 全データを削除（完全リセット）
+ */
+function clearAllGameData() {
+    if (!confirm('全てのゲームデータを削除しますか？\n（プレイヤーデータも全て削除されます）')) {
+        return;
+    }
+
+    if (!confirm('本当に削除しますか？この操作は取り消せません。')) {
+        return;
+    }
+
+    // プレイヤーデータを削除
+    firebaseService.clearAllPlayers()
+        .then(() => {
+            // ゲームステータスを待機中に戻す
+            return firebaseService.setGameStatus({
+                status: GAME_STATUS.WAITING,
+                startTime: null,
+                endTime: null,
+                duration: null
+            });
+        })
+        .then(() => {
+            logDebug('App', 'All game data cleared');
+            alert('全データを削除しました。');
+            screensUI.showScreen('admin');
+        })
+        .catch(error => {
+            console.error('Clear all data error:', error);
+            alert('削除に失敗しました: ' + error.message);
+        });
+}
 
 // =====================
 // 管理者機能

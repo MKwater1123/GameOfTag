@@ -1094,6 +1094,54 @@ body {
     }
 }
 
+/* 管理者リセットセクション */
+.admin-reset-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.admin-reset-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+    margin-bottom: 1.5rem;
+}
+
+.admin-reset-section h3 {
+    color: var(--accent-cyan);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.admin-reset-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+}
+
+.admin-reset-note {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.6;
+}
+
+.player-end-actions {
+    margin-top: 2rem;
+    position: relative;
+    z-index: 1;
+}
+
+.end-screen-actions {
+    margin-top: 2rem;
+    position: relative;
+    z-index: 1;
+}
+
 .game-results {
     display: flex;
     gap: 20px;

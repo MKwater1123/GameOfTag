@@ -88,7 +88,17 @@ function setupLoginScreen() {
     if (backToChoiceLogin) backToChoiceLogin.addEventListener('click', showAuthChoice);
 
     // Enterキー対応
+    const loginUsername = document.getElementById('login-username');
     const loginPassword = document.getElementById('login-password');
+
+    if (loginUsername) {
+        loginUsername.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && loginPassword) {
+                loginPassword.focus();
+            }
+        });
+    }
+
     if (loginPassword) {
         loginPassword.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') loginExistingPlayer();
@@ -188,55 +198,6 @@ async function loginExistingPlayer() {
         console.error('Login error:', error);
         alert(error.message || 'ログインに失敗しました');
     }
-}
-
-// Enterキー対応をログインフォームの名前入力欄にも追加
-function setupLoginScreen() {
-    // 初期選択画面
-    const newPlayerBtn = document.getElementById('new-player-btn');
-    const returningPlayerBtn = document.getElementById('returning-player-btn');
-    const adminLoginBtn = document.getElementById('admin-login-btn');
-
-    if (newPlayerBtn) newPlayerBtn.addEventListener('click', showRegisterForm);
-    if (returningPlayerBtn) returningPlayerBtn.addEventListener('click', showLoginForm);
-    if (adminLoginBtn) adminLoginBtn.addEventListener('click', showAdminLogin);
-
-    // 新規参加フォーム
-    const registerOniBtn = document.getElementById('register-oni');
-    const registerRunnerBtn = document.getElementById('register-runner');
-    const backToChoiceRegister = document.getElementById('back-to-choice-register');
-
-    if (registerOniBtn) registerOniBtn.addEventListener('click', () => registerNewPlayer(ROLES.ONI));
-    if (registerRunnerBtn) registerRunnerBtn.addEventListener('click', () => registerNewPlayer(ROLES.RUNNER));
-    if (backToChoiceRegister) backToChoiceRegister.addEventListener('click', showAuthChoice);
-
-    // ログインフォーム
-    const loginSubmitBtn = document.getElementById('login-submit-btn');
-    const backToChoiceLogin = document.getElementById('back-to-choice-login');
-
-    if (loginSubmitBtn) loginSubmitBtn.addEventListener('click', loginExistingPlayer);
-    if (backToChoiceLogin) backToChoiceLogin.addEventListener('click', showAuthChoice);
-
-    // Enterキー対応
-    const loginUsername = document.getElementById('login-username');
-    const loginPassword = document.getElementById('login-password');
-
-    if (loginUsername) {
-        loginUsername.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                // パスワード入力欄にフォーカス
-                if (loginPassword) loginPassword.focus();
-            }
-        });
-    }
-
-    if (loginPassword) {
-        loginPassword.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') loginExistingPlayer();
-        });
-    }
-
-    setupAdminScreen();
 }
 
 // =====================

@@ -112,6 +112,7 @@ class GameService {
         this.currentUser.role = player.role;
         this.currentUser.password = player.password;
         this.currentUser.captured = player.captured || false;
+        this.currentUser.capturedBy = player.capturedBy || null;
         this.currentUser.disqualified = player.disqualified || false;
         this.currentUser.lat = player.lat;
         this.currentUser.lng = player.lng;
@@ -292,8 +293,11 @@ class GameService {
         const data = {
             username: this.currentUser.username,
             role: this.currentUser.role,
+            password: this.currentUser.password,
             lat: this.currentUser.lat,
             lng: this.currentUser.lng,
+            captured: this.currentUser.captured || false,
+            disqualified: this.currentUser.disqualified || false,
             updated_at: Date.now()
         };
 

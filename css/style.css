@@ -1124,6 +1124,27 @@ body {
     color: var(--text-secondary);
 }
 
+/* ---------- End Screen Actions ---------- */
+.end-screen-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 1.5rem;
+    width: 100%;
+    max-width: 300px;
+}
+
+.end-screen-actions .btn {
+    width: 100%;
+    padding: 16px 24px;
+    font-size: 1em;
+}
+
+.end-screen-actions .btn-primary {
+    background: var(--gradient-purple);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
 /* ===========================================
    GAME END SCREEN
    =========================================== */

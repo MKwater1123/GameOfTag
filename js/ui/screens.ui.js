@@ -157,20 +157,43 @@ class ScreensUI {
     updateRoleDisplay(role) {
         const roleDisplay = document.getElementById('role-display');
         const roleInfo = document.getElementById('role-info');
+        const areaStatus = document.getElementById('area-status');
 
         if (roleDisplay) {
-            roleDisplay.textContent = role === ROLES.ONI ? '● 鬼' : '● 逃走者';
-            roleDisplay.style.color = role === ROLES.ONI ? '#ff3b30' : '#00e5ff';
+            if (role === ROLES.ONI) {
+                roleDisplay.textContent = '● 鬼';
+                roleDisplay.style.color = '#ff3b30';
+            } else if (role === ROLES.SPECTATOR) {
+                roleDisplay.textContent = '👁️ 観戦中';
+                roleDisplay.style.color = '#a855f7';
+            } else {
+                roleDisplay.textContent = '● 逃走者';
+                roleDisplay.style.color = '#00e5ff';
+            }
         }
 
         if (roleInfo) {
-            roleInfo.classList.remove('hidden');
-            if (role === ROLES.RUNNER) {
-                roleInfo.textContent = '次の送信: --:--';
-                roleInfo.id = 'runner-countdown-display';
-            } else if (role === ROLES.ONI) {
-                roleInfo.textContent = '最終更新: --';
-                roleInfo.id = 'oni-update-display';
+            if (role === ROLES.SPECTATOR) {
+                roleInfo.textContent = '全員の位置を確認可能';
+                roleInfo.classList.remove('hidden');
+            } else {
+                roleInfo.classList.remove('hidden');
+                if (role === ROLES.RUNNER) {
+                    roleInfo.textContent = '次の送信: --:--';
+                    roleInfo.id = 'runner-countdown-display';
+                } else if (role === ROLES.ONI) {
+                    roleInfo.textContent = '最終更新: --';
+                    roleInfo.id = 'oni-update-display';
+                }
+            }
+        }
+
+        // 観戦者はエリア状態を非表示
+        if (areaStatus) {
+            if (role === ROLES.SPECTATOR) {
+                areaStatus.classList.add('hidden');
+            } else {
+                areaStatus.classList.remove('hidden');
             }
         }
     }

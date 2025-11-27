@@ -52,6 +52,9 @@ class GameService {
         // 鬼化イベント管理
         this.onificationTriggered = false;
 
+        // 観戦モード
+        this.isSpectator = false;
+
         // コールバック
         this.onCaptured = null;
         this.onDisqualified = null;
@@ -62,6 +65,27 @@ class GameService {
         this.onShrinkEnd = null;
         this.onOnificationStart = null;
         this.onBecomeOni = null;
+    }
+
+    // =====================
+    // 観戦モード管理
+    // =====================
+
+    /**
+     * 観戦モードを設定
+     * @param {boolean} enabled - 有効/無効
+     */
+    setSpectatorMode(enabled) {
+        this.isSpectator = enabled;
+        logDebug('Game', `Spectator mode: ${enabled}`);
+    }
+
+    /**
+     * 観戦モードかどうか
+     * @returns {boolean}
+     */
+    isSpectatorMode() {
+        return this.isSpectator;
     }
 
     // =====================
@@ -657,6 +681,9 @@ class GameService {
         this.stopLocationSending();
         this.resetShrinkEvent();
         this.resetOnificationEvent();
+
+        // 観戦モードをリセット
+        this.isSpectator = false;
 
         if (this.outsideTimer) {
             clearInterval(this.outsideTimer);

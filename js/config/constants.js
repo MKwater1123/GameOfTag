@@ -51,7 +51,8 @@ export const GAME_STATUS = {
 export const ROLES = {
     ONI: 'oni',
     RUNNER: 'runner',
-    ADMIN: 'admin'
+    ADMIN: 'admin',
+    SPECTATOR: 'spectator'
 };
 
 // マーカー色URL

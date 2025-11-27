@@ -89,8 +89,9 @@ class MapUI {
      * プレイヤーマーカーを追加/更新
      * @param {string} playerId - プレイヤーID
      * @param {Object} playerData - プレイヤーデータ
+     * @param {boolean} isSpectator - 観戦者モードかどうか
      */
-    addPlayerMarker(playerId, playerData) {
+    addPlayerMarker(playerId, playerData, isSpectator = false) {
         const { username, role, lat, lng, updated_at } = playerData;
 
         if (!this.map || !lat || !lng) {
@@ -117,8 +118,13 @@ class MapUI {
 
             const marker = L.marker([lat, lng], { icon }).addTo(this.map);
 
-            // ポップアップ内容
-            const popupContent = `<b>${colorEmoji} ${username}</b><br>${statusText}<br>更新: ${formatTime(updated_at)}`;
+            // ポップアップ内容（観戦者モードでは捕獲ボタンなし）
+            let popupContent = `<b>${colorEmoji} ${username}</b><br>${statusText}<br>更新: ${formatTime(updated_at)}`;
+
+            // 観戦者モードの場合は追加情報を表示
+            if (isSpectator) {
+                popupContent = `<b>${colorEmoji} ${username}</b><br>${statusText}<br><small>更新: ${formatTime(updated_at)}</small>`;
+            }
 
             marker.bindPopup(popupContent);
             this.playerMarkers[playerId] = marker;

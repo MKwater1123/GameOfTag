@@ -463,15 +463,21 @@ function checkGameStatus() {
 function handleGameStatusChange(data) {
     switch (data.status) {
         case GAME_STATUS.COUNTDOWN:
-            screensUI.showCountdownScreen(data.countdownStart);
+            // 観戦者でなければカウントダウン画面を表示
+            if (!gameService.isSpectatorMode()) {
+                screensUI.showCountdownScreen(data.countdownStart);
+            }
             break;
 
         case GAME_STATUS.ACTIVE:
-            screensUI.hideWaitingOverlay();
-            screensUI.updateOutsideWarning(null);
-            gameService.startLocationSending((seconds) => {
-                screensUI.updateRunnerCountdown(seconds);
-            });
+            // 観戦者モードでなければ通常の処理
+            if (!gameService.isSpectatorMode()) {
+                screensUI.hideWaitingOverlay();
+                screensUI.updateOutsideWarning(null);
+                gameService.startLocationSending((seconds) => {
+                    screensUI.updateRunnerCountdown(seconds);
+                });
+            }
             screensUI.startGameTimer(data.endTime);
             // 縮小イベントの監視を開始
             gameService.startShrinkEventMonitoring();
@@ -482,6 +488,8 @@ function handleGameStatusChange(data) {
         case GAME_STATUS.ENDED:
             gameService.stopLocationSending();
             screensUI.stopGameTimer();
+            // 観戦モードをリセット
+            gameService.setSpectatorMode(false);
             firebaseService.getPlayersOnce().then((players) => {
                 // winnerを取得して渡す
                 const winner = data.winner || null;
@@ -542,10 +550,22 @@ function setupGameEndScreen() {
         capturedBackBtn.addEventListener('click', backToLoginScreen);
     }
 
+    // 観戦モードボタン（確保画面）
+    const capturedSpectateBtn = document.getElementById('captured-spectate-btn');
+    if (capturedSpectateBtn) {
+        capturedSpectateBtn.addEventListener('click', enterSpectatorMode);
+    }
+
     // ログイン画面に戻るボタン（失格画面）
     const disqualifiedBackBtn = document.getElementById('disqualified-back-to-login-btn');
     if (disqualifiedBackBtn) {
         disqualifiedBackBtn.addEventListener('click', backToLoginScreen);
+    }
+
+    // 観戦モードボタン（失格画面）
+    const disqualifiedSpectateBtn = document.getElementById('disqualified-spectate-btn');
+    if (disqualifiedSpectateBtn) {
+        disqualifiedSpectateBtn.addEventListener('click', enterSpectatorMode);
     }
 
     // 管理者用リセットボタン
@@ -570,6 +590,71 @@ function backToLoginScreen() {
     // ログイン画面に戻る
     screensUI.showScreen('login');
     showAuthChoice();
+}
+
+/**
+ * 観戦モードに入る
+ */
+function enterSpectatorMode() {
+    logDebug('App', 'Entering spectator mode');
+
+    // 観戦者としてマーク
+    gameService.setSpectatorMode(true);
+
+    // マップ画面を表示
+    screensUI.showScreen('map');
+
+    // 観戦者用の役割表示
+    screensUI.updateRoleDisplay(ROLES.SPECTATOR);
+
+    // ゲームタイマーを表示（ゲームがアクティブな場合）
+    const gameState = gameService.getGameState();
+    if (gameState.status === GAME_STATUS.ACTIVE && gameState.endTime) {
+        screensUI.startGameTimer(gameState.endTime);
+    }
+
+    // プレイヤー監視を再開（観戦者モードで）
+    watchPlayersAsSpectator();
+
+    logDebug('App', 'Spectator mode activated');
+}
+
+/**
+ * 観戦者としてプレイヤーを監視
+ */
+function watchPlayersAsSpectator() {
+    firebaseService.watchPlayers(
+        (players) => {
+            if (!players) return;
+
+            const user = gameService.getCurrentUser();
+
+            // 自分が鬼化されたかチェック（鬼化イベント対応）
+            if (user.id && players[user.id] && players[user.id].onified) {
+                const myData = players[user.id];
+                if ((user.captured || user.disqualified) && myData.role === ROLES.ONI) {
+                    gameService.handleBecomeOni();
+                    return;
+                }
+            }
+
+            // マーカー更新（観戦者は全員のマーカーを見れる）
+            mapUI.clearAllPlayerMarkers();
+
+            Object.entries(players).forEach(([playerId, playerData]) => {
+                // 確保・失格済みのプレイヤーはスキップ
+                if (playerData.captured || playerData.disqualified) return;
+                // 位置情報がない場合はスキップ
+                if (!playerData.lat || !playerData.lng) return;
+
+                mapUI.addPlayerMarker(playerId, playerData, true); // 観戦者モードフラグ
+            });
+
+            // 参加者リスト更新
+            playerListUI.update(players, user);
+        },
+        (error) => console.error('Players watch error (spectator):', error)
+    );
 }
 
 /**

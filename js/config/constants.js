@@ -64,7 +64,8 @@ export const ADMIN_PASSWORD = 'kotaro1123';
 export const FIREBASE_PATHS = {
     SESSION: 'game_session_v1',
     PLAYERS: 'game_session_v1/players',
-    GAME_STATUS: 'game_session_v1/game_status'
+    GAME_STATUS: 'game_session_v1/game_status',
+    EVENTS: 'game_session_v1/events'
 };
 
 // 位置情報オプション

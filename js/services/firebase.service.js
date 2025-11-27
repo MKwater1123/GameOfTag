@@ -14,6 +14,7 @@ class FirebaseService {
         this.database = null;
         this.playersRef = null;
         this.gameStatusRef = null;
+        this.eventsRef = null;
         this.initialized = false;
     }
 
@@ -34,6 +35,7 @@ class FirebaseService {
             this.database = window.firebase.database();
             this.playersRef = this.database.ref(FIREBASE_PATHS.PLAYERS);
             this.gameStatusRef = this.database.ref(FIREBASE_PATHS.GAME_STATUS);
+            this.eventsRef = this.database.ref(FIREBASE_PATHS.EVENTS);
             this.initialized = true;
 
             logDebug('Firebase', 'Init success', { url: firebaseConfig.databaseURL });
@@ -256,6 +258,61 @@ class FirebaseService {
         if (!this.gameStatusRef) return Promise.reject(new Error('Not initialized'));
 
         return this.gameStatusRef.once('value').then(snapshot => snapshot.val());
+    }
+
+    // =====================
+    // イベント操作
+    // =====================
+
+    /**
+     * イベントを追加
+     * @param {Object} eventData - イベントデータ
+     * @returns {Promise}
+     */
+    addEvent(eventData) {
+        if (!this.eventsRef) return Promise.reject(new Error('Not initialized'));
+
+        const eventId = Date.now().toString();
+        return this.eventsRef.child(eventId).set({
+            ...eventData,
+            timestamp: Date.now()
+        });
+    }
+
+    /**
+     * イベントの変更を監視
+     * @param {Function} callback - 新しいイベント時のコールバック
+     */
+    watchEvents(callback) {
+        if (!this.eventsRef) return;
+
+        // 新しいイベントのみを監視（現在時刻以降）
+        const now = Date.now();
+        this.eventsRef.orderByChild('timestamp').startAt(now).on('child_added', (snapshot) => {
+            const event = snapshot.val();
+            if (event) {
+                callback(event);
+            }
+        });
+    }
+
+    /**
+     * イベント監視を停止
+     */
+    unwatchEvents() {
+        if (this.eventsRef) {
+            this.eventsRef.off();
+        }
+    }
+
+    /**
+     * 全イベントをクリア
+     * @returns {Promise}
+     */
+    clearEvents() {
+        if (!this.eventsRef) return Promise.reject(new Error('Not initialized'));
+
+        return this.eventsRef.remove();
     }
 }
 

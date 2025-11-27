@@ -220,6 +220,7 @@ function initMapScreen() {
 
     // Firebase監視開始
     watchPlayers();
+    watchGameEvents();
 
     // UI初期化
     playerListUI.initialize();
@@ -326,6 +327,20 @@ function watchPlayers() {
 }
 
 // =====================
+// イベント監視
+// =====================
+function watchGameEvents() {
+    firebaseService.watchEvents((event) => {
+        if (!event) return;
+
+        logDebug('App', 'New event received', event);
+
+        // 全プレイヤーにイベントを表示
+        eventsUI.addEvent(event.message, event.type || EVENT_TYPES.NORMAL);
+    });
+}
+
+// =====================
 // ゲームステータス管理
 // =====================
 function watchGameStatus() {
@@ -396,7 +411,15 @@ window.capturePlayer = function (playerId, username) {
         .then(() => {
             alert(`${username} を確保しました！`);
             const user = gameService.getCurrentUser();
-            eventsUI.addEvent(`${user.username}が${username}を確保しました`, EVENT_TYPES.IMPORTANT);
+
+            // Firebaseにイベントを保存（全プレイヤーに共有）
+            firebaseService.addEvent({
+                type: EVENT_TYPES.IMPORTANT,
+                message: `${user.username}が${username}を確保しました`,
+                capturedBy: user.username,
+                capturedPlayer: username
+            }).catch(err => console.error('Event save error:', err));
+
             mapUI.removePlayerMarker(playerId);
         })
         .catch(error => {
@@ -504,6 +527,10 @@ function resetGameForContinue() {
             });
         })
         .then(() => {
+            // イベントをクリア
+            return firebaseService.clearEvents();
+        })
+        .then(() => {
             logDebug('App', 'Game reset for continue');
             alert('ゲームをリセットしました。管理画面から新しいゲームを開始できます。');
             screensUI.showScreen('admin');
@@ -528,6 +555,10 @@ function clearAllGameData() {
 
     // プレイヤーデータを削除
     firebaseService.clearAllPlayers()
+        .then(() => {
+            // イベントを削除
+            return firebaseService.clearEvents();
+        })
         .then(() => {
             // ゲームステータスを待機中に戻す
             return firebaseService.setGameStatus({

@@ -162,6 +162,54 @@ class FirebaseService {
         return this.playersRef.once('value').then(snapshot => snapshot.val());
     }
 
+    /**
+     * ユーザー名でプレイヤーを検索
+     * @param {string} username - ユーザー名
+     * @returns {Promise<Object|null>} プレイヤーデータまたはnull
+     */
+    findPlayerByUsername(username) {
+        if (!this.playersRef) return Promise.reject(new Error('Not initialized'));
+
+        return this.playersRef.orderByChild('username').equalTo(username).once('value')
+            .then(snapshot => {
+                const data = snapshot.val();
+                if (!data) return null;
+
+                // 最初にマッチしたプレイヤーを返す
+                const playerId = Object.keys(data)[0];
+                return { id: playerId, ...data[playerId] };
+            });
+    }
+
+    /**
+     * プレイヤーを新規登録（パスワード付き）
+     * @param {string} playerId - プレイヤーID
+     * @param {Object} data - プレイヤーデータ
+     * @returns {Promise}
+     */
+    registerPlayer(playerId, data) {
+        if (!this.playersRef) return Promise.reject(new Error('Not initialized'));
+
+        return this.playersRef.child(playerId).set(data);
+    }
+
+    /**
+     * プレイヤーの認証（パスワード確認）
+     * @param {string} username - ユーザー名
+     * @param {string} password - パスワード
+     * @returns {Promise<Object|null>} 認証成功時はプレイヤーデータ、失敗時はnull
+     */
+    authenticatePlayer(username, password) {
+        if (!this.playersRef) return Promise.reject(new Error('Not initialized'));
+
+        return this.findPlayerByUsername(username)
+            .then(player => {
+                if (!player) return null;
+                if (player.password !== password) return null;
+                return player;
+            });
+    }
+
     // =====================
     // ゲームステータス操作
     // =====================

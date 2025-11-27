@@ -59,6 +59,104 @@ body {
     gap: 15px;
 }
 
+/* 認証画面セクション */
+.auth-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.auth-section.hidden {
+    display: none !important;
+}
+
+.form-title {
+    font-size: 1.3em;
+    color: #1a1a2e;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.btn-large {
+    width: 100%;
+    padding: 18px;
+    font-size: 1.1em;
+    font-weight: bold;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin: 8px 0;
+}
+
+.btn-large:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.btn-large:active {
+    transform: translateY(0);
+}
+
+.btn-new {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+}
+
+.btn-return {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.input-field {
+    width: 100%;
+    padding: 15px;
+    font-size: 1em;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.btn-back {
+    background: transparent;
+    border: 2px solid #ddd;
+    color: #666;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: all 0.3s;
+}
+
+.btn-back:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.btn-login {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    width: 100%;
+    padding: 15px;
+    font-size: 1em;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
 #username {
     padding: 15px;
     font-size: 1em;

@@ -28,6 +28,7 @@ class GameService {
             id: null,
             username: '',
             role: '',
+            password: '',
             lat: null,
             lng: null,
             captured: false,
@@ -53,7 +54,75 @@ class GameService {
     // =====================
 
     /**
-     * ゲームに参加
+     * ゲームに新規参加（パスワード付き）
+     * @param {string} username - ユーザー名
+     * @param {string} role - 役割 (oni/runner)
+     * @param {string} password - パスワード
+     * @returns {Promise<Object>} currentUser
+     */
+    async registerAndJoin(username, role, password) {
+        // 既存ユーザーチェック
+        const existing = await firebaseService.findPlayerByUsername(username);
+        if (existing) {
+            throw new Error('この名前は既に使用されています');
+        }
+
+        this.currentUser.id = generateUniqueId('user');
+        this.currentUser.username = username;
+        this.currentUser.role = role;
+        this.currentUser.password = password;
+        this.currentUser.captured = false;
+        this.currentUser.disqualified = false;
+
+        // Firebaseに登録
+        const data = {
+            username: this.currentUser.username,
+            role: this.currentUser.role,
+            password: this.currentUser.password,
+            captured: false,
+            disqualified: false,
+            lat: null,
+            lng: null,
+            updated_at: Date.now(),
+            created_at: Date.now()
+        };
+
+        await firebaseService.registerPlayer(this.currentUser.id, data);
+
+        logDebug('Game', 'User registered', { username, role, id: this.currentUser.id });
+
+        return this.currentUser;
+    }
+
+    /**
+     * 既存ユーザーとしてログイン
+     * @param {string} username - ユーザー名
+     * @param {string} password - パスワード
+     * @returns {Promise<Object>} currentUser
+     */
+    async loginAndJoin(username, password) {
+        const player = await firebaseService.authenticatePlayer(username, password);
+
+        if (!player) {
+            throw new Error('名前またはパスワードが正しくありません');
+        }
+
+        this.currentUser.id = player.id;
+        this.currentUser.username = player.username;
+        this.currentUser.role = player.role;
+        this.currentUser.password = player.password;
+        this.currentUser.captured = player.captured || false;
+        this.currentUser.disqualified = player.disqualified || false;
+        this.currentUser.lat = player.lat;
+        this.currentUser.lng = player.lng;
+
+        logDebug('Game', 'User logged in', { username, role: player.role, id: player.id });
+
+        return this.currentUser;
+    }
+
+    /**
+     * ゲームに参加（レガシー：パスワードなし）
      * @param {string} username - ユーザー名
      * @param {string} role - 役割 (oni/runner)
      * @returns {Object} currentUser

@@ -14,17 +14,42 @@
             <h1 class="title">MIZUNO 鬼ごっこ</h1>
             <p class="subtitle">-広範囲鬼ごっこ-</p>
 
-            <div class="login-form">
-                <input type="text" id="username" placeholder="名前を入力（例：タナカ）" maxlength="20" required>
-
-                <div class="role-buttons">
-                    <button id="join-oni" class="btn btn-oni">鬼で参加</button>
-                    <button id="join-runner" class="btn btn-runner">逃走者で参加</button>
-                </div>
-
+            <!-- 初期選択画面 -->
+            <div id="auth-choice" class="auth-section">
+                <button id="new-player-btn" class="btn btn-large btn-new">新規参加</button>
+                <button id="returning-player-btn" class="btn btn-large btn-return">ログイン（復帰）</button>
                 <div class="admin-link">
                     <button id="admin-login-btn" class="btn-link">管理者</button>
                 </div>
+            </div>
+
+            <!-- 新規参加フォーム -->
+            <div id="register-form" class="auth-section hidden">
+                <h2 class="form-title">新規参加</h2>
+                <input type="text" id="register-username" class="input-field" placeholder="名前を入力（例：タナカ）" maxlength="20"
+                    required>
+                <input type="password" id="register-password" class="input-field" placeholder="パスワード（4文字以上）"
+                    minlength="4" maxlength="20" required>
+                <input type="password" id="register-password-confirm" class="input-field" placeholder="パスワード（確認）"
+                    minlength="4" maxlength="20" required>
+
+                <div class="role-buttons">
+                    <button id="register-oni" class="btn btn-oni">鬼で参加</button>
+                    <button id="register-runner" class="btn btn-runner">逃走者で参加</button>
+                </div>
+
+                <button id="back-to-choice-register" class="btn-back">戻る</button>
+            </div>
+
+            <!-- ログインフォーム -->
+            <div id="login-form" class="auth-section hidden">
+                <h2 class="form-title">ログイン（復帰）</h2>
+                <input type="text" id="login-username" class="input-field" placeholder="名前を入力" maxlength="20" required>
+                <input type="password" id="login-password" class="input-field" placeholder="パスワード" maxlength="20"
+                    required>
+
+                <button id="login-submit-btn" class="btn btn-login">ログイン</button>
+                <button id="back-to-choice-login" class="btn-back">戻る</button>
             </div>
         </div>
     </div>

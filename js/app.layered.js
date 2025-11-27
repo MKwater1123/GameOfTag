@@ -62,24 +62,132 @@ function initializeApp() {
 // ログイン画面
 // =====================
 function setupLoginScreen() {
-    const usernameInput = document.getElementById('username');
-    const joinOniBtn = document.getElementById('join-oni');
-    const joinRunnerBtn = document.getElementById('join-runner');
+    // 初期選択画面
+    const newPlayerBtn = document.getElementById('new-player-btn');
+    const returningPlayerBtn = document.getElementById('returning-player-btn');
     const adminLoginBtn = document.getElementById('admin-login-btn');
 
-    if (joinOniBtn) joinOniBtn.addEventListener('click', () => joinGame(ROLES.ONI));
-    if (joinRunnerBtn) joinRunnerBtn.addEventListener('click', () => joinGame(ROLES.RUNNER));
+    if (newPlayerBtn) newPlayerBtn.addEventListener('click', showRegisterForm);
+    if (returningPlayerBtn) returningPlayerBtn.addEventListener('click', showLoginForm);
     if (adminLoginBtn) adminLoginBtn.addEventListener('click', showAdminLogin);
 
-    if (usernameInput) {
-        usernameInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && usernameInput.value.trim()) {
-                joinGame(ROLES.RUNNER);
-            }
+    // 新規参加フォーム
+    const registerOniBtn = document.getElementById('register-oni');
+    const registerRunnerBtn = document.getElementById('register-runner');
+    const backToChoiceRegister = document.getElementById('back-to-choice-register');
+
+    if (registerOniBtn) registerOniBtn.addEventListener('click', () => registerNewPlayer(ROLES.ONI));
+    if (registerRunnerBtn) registerRunnerBtn.addEventListener('click', () => registerNewPlayer(ROLES.RUNNER));
+    if (backToChoiceRegister) backToChoiceRegister.addEventListener('click', showAuthChoice);
+
+    // ログインフォーム
+    const loginSubmitBtn = document.getElementById('login-submit-btn');
+    const backToChoiceLogin = document.getElementById('back-to-choice-login');
+
+    if (loginSubmitBtn) loginSubmitBtn.addEventListener('click', loginExistingPlayer);
+    if (backToChoiceLogin) backToChoiceLogin.addEventListener('click', showAuthChoice);
+
+    // Enterキー対応
+    const loginPassword = document.getElementById('login-password');
+    if (loginPassword) {
+        loginPassword.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loginExistingPlayer();
         });
     }
 
     setupAdminScreen();
+}
+
+function showAuthChoice() {
+    document.getElementById('auth-choice').classList.remove('hidden');
+    document.getElementById('register-form').classList.add('hidden');
+    document.getElementById('login-form').classList.add('hidden');
+}
+
+function showRegisterForm() {
+    document.getElementById('auth-choice').classList.add('hidden');
+    document.getElementById('register-form').classList.remove('hidden');
+    document.getElementById('login-form').classList.add('hidden');
+}
+
+function showLoginForm() {
+    document.getElementById('auth-choice').classList.add('hidden');
+    document.getElementById('register-form').classList.add('hidden');
+    document.getElementById('login-form').classList.remove('hidden');
+}
+
+async function registerNewPlayer(role) {
+    const username = document.getElementById('register-username').value.trim();
+    const password = document.getElementById('register-password').value;
+    const passwordConfirm = document.getElementById('register-password-confirm').value;
+
+    // バリデーション
+    if (!username) {
+        alert('名前を入力してください');
+        return;
+    }
+
+    if (!password || password.length < 4) {
+        alert('パスワードは4文字以上で入力してください');
+        return;
+    }
+
+    if (password !== passwordConfirm) {
+        alert('パスワードが一致しません');
+        return;
+    }
+
+    try {
+        await gameService.registerAndJoin(username, role, password);
+        logDebug('App', 'New player registered', { username, role });
+
+        // マップ画面へ遷移
+        screensUI.showScreen('map');
+        initMapScreen();
+        checkGameStatus();
+    } catch (error) {
+        console.error('Registration error:', error);
+        alert(error.message || '登録に失敗しました');
+    }
+}
+
+async function loginExistingPlayer() {
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    if (!username) {
+        alert('名前を入力してください');
+        return;
+    }
+
+    if (!password) {
+        alert('パスワードを入力してください');
+        return;
+    }
+
+    try {
+        const user = await gameService.loginAndJoin(username, password);
+        logDebug('App', 'Player logged in', { username, role: user.role });
+
+        // 確保済みか失格済みかチェック
+        if (user.captured) {
+            screensUI.showCapturedScreen(user.capturedBy || '不明');
+            return;
+        }
+
+        if (user.disqualified) {
+            screensUI.showDisqualifiedScreen();
+            return;
+        }
+
+        // マップ画面へ遷移
+        screensUI.showScreen('map');
+        initMapScreen();
+        checkGameStatus();
+    } catch (error) {
+        console.error('Login error:', error);
+        alert(error.message || 'ログインに失敗しました');
+    }
 }
 
 function joinGame(role) {

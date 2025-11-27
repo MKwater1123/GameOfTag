@@ -275,7 +275,6 @@ function setupGameCallbacks() {
 
     // 縮小イベント開始
     gameService.onShrinkStart = () => {
-        eventsUI.addEvent('⚠️ 安全地帯が縮小を開始しました！', EVENT_TYPES.IMPORTANT);
         mapUI.setAreaShrinkingStyle(true);
         screensUI.showShrinkWarning(true);
 
@@ -295,9 +294,15 @@ function setupGameCallbacks() {
 
     // 縮小イベント終了
     gameService.onShrinkEnd = (finalRadius) => {
-        eventsUI.addEvent(`安全地帯の縮小が完了しました（半径${finalRadius}m）`, EVENT_TYPES.IMPORTANT);
         mapUI.setAreaShrinkingStyle(false);
         screensUI.showShrinkWarning(false);
+
+        // Firebaseにイベントを保存（全プレイヤーに共有）
+        firebaseService.addEvent({
+            type: EVENT_TYPES.IMPORTANT,
+            message: `安全地帯の縮小が完了しました（半径${finalRadius}m）`,
+            eventType: 'shrink_end'
+        }).catch(err => console.error('Event save error:', err));
     };
 }
 

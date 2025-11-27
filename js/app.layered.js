@@ -278,10 +278,13 @@ function setupGameCallbacks() {
         mapUI.setAreaShrinkingStyle(true);
         screensUI.showShrinkWarning(true);
 
+        // 現在の半径を取得
+        const currentRadius = locationService.getCurrentRadius();
+
         // Firebaseにイベントを保存（全プレイヤーに共有）
         firebaseService.addEvent({
             type: EVENT_TYPES.IMPORTANT,
-            message: '⚠️ 安全地帯が縮小を開始しました！30分かけて縮小します',
+            message: `⚠️ 安全地帯が縮小を開始しました！現在の半径${currentRadius}mから、30分かけて毎秒1mずつ縮小します。最小半径は500mです。`,
             eventType: 'shrink_start'
         }).catch(err => console.error('Event save error:', err));
     };
@@ -300,7 +303,7 @@ function setupGameCallbacks() {
         // Firebaseにイベントを保存（全プレイヤーに共有）
         firebaseService.addEvent({
             type: EVENT_TYPES.IMPORTANT,
-            message: `安全地帯の縮小が完了しました（半径${finalRadius}m）`,
+            message: `✅ 安全地帯の縮小が完了しました。現在の安全地帯は半径${finalRadius}mです。`,
             eventType: 'shrink_end'
         }).catch(err => console.error('Event save error:', err));
     };

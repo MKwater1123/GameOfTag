@@ -231,11 +231,17 @@ class ScreensUI {
     // =====================
 
     /**
-     * 縮小警告の表示/非表示
+     * 縮小開始警告の表示（10秒後に自動非表示）
      * @param {boolean} show - 表示するかどうか
      */
     showShrinkWarning(show) {
         let shrinkWarning = document.getElementById('shrink-warning');
+
+        // 既存のタイマーをクリア
+        if (this.shrinkWarningTimer) {
+            clearTimeout(this.shrinkWarningTimer);
+            this.shrinkWarningTimer = null;
+        }
 
         if (!shrinkWarning && show) {
             // 警告要素を動的に作成
@@ -245,8 +251,7 @@ class ScreensUI {
             shrinkWarning.innerHTML = `
                 <div class="shrink-warning-content">
                     <span class="shrink-icon">⚠️</span>
-                    <span class="shrink-text">安全地帯縮小中</span>
-                    <span id="shrink-radius" class="shrink-radius"></span>
+                    <span class="shrink-text">安全地帯の縮小を開始します</span>
                 </div>
             `;
 
@@ -258,7 +263,17 @@ class ScreensUI {
 
         if (shrinkWarning) {
             if (show) {
+                // メッセージを「開始します」に設定
+                const textEl = shrinkWarning.querySelector('.shrink-text');
+                if (textEl) {
+                    textEl.textContent = '安全地帯の縮小を開始します';
+                }
                 shrinkWarning.classList.remove('hidden');
+
+                // 10秒後に自動非表示
+                this.shrinkWarningTimer = setTimeout(() => {
+                    shrinkWarning.classList.add('hidden');
+                }, 10000);
             } else {
                 shrinkWarning.classList.add('hidden');
             }
@@ -266,16 +281,12 @@ class ScreensUI {
     }
 
     /**
-     * 縮小情報を更新
+     * 縮小情報を更新（この関数はもう使用しない）
      * @param {number} currentRadius - 現在の半径（メートル）
      * @param {number} remainingTime - 縮小終了までの残り時間（ミリ秒）
      */
     updateShrinkInfo(currentRadius, remainingTime) {
-        const radiusEl = document.getElementById('shrink-radius');
-        if (radiusEl) {
-            const remainingMin = Math.ceil(remainingTime / 60000);
-            radiusEl.textContent = `半径: ${Math.round(currentRadius)}m (残り${remainingMin}分)`;
-        }
+        // 地図上の表示は10秒後に消えるので、ここでは何もしない
     }
 
     // =====================

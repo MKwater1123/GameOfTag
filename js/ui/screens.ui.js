@@ -227,6 +227,58 @@ class ScreensUI {
     }
 
     // =====================
+    // 縮小イベント表示
+    // =====================
+
+    /**
+     * 縮小警告の表示/非表示
+     * @param {boolean} show - 表示するかどうか
+     */
+    showShrinkWarning(show) {
+        let shrinkWarning = document.getElementById('shrink-warning');
+
+        if (!shrinkWarning && show) {
+            // 警告要素を動的に作成
+            shrinkWarning = document.createElement('div');
+            shrinkWarning.id = 'shrink-warning';
+            shrinkWarning.className = 'shrink-warning';
+            shrinkWarning.innerHTML = `
+                <div class="shrink-warning-content">
+                    <span class="shrink-icon">⚠️</span>
+                    <span class="shrink-text">安全地帯縮小中</span>
+                    <span id="shrink-radius" class="shrink-radius"></span>
+                </div>
+            `;
+
+            const mapScreen = document.getElementById('map-screen');
+            if (mapScreen) {
+                mapScreen.appendChild(shrinkWarning);
+            }
+        }
+
+        if (shrinkWarning) {
+            if (show) {
+                shrinkWarning.classList.remove('hidden');
+            } else {
+                shrinkWarning.classList.add('hidden');
+            }
+        }
+    }
+
+    /**
+     * 縮小情報を更新
+     * @param {number} currentRadius - 現在の半径（メートル）
+     * @param {number} remainingTime - 縮小終了までの残り時間（ミリ秒）
+     */
+    updateShrinkInfo(currentRadius, remainingTime) {
+        const radiusEl = document.getElementById('shrink-radius');
+        if (radiusEl) {
+            const remainingMin = Math.ceil(remainingTime / 60000);
+            radiusEl.textContent = `半径: ${Math.round(currentRadius)}m (残り${remainingMin}分)`;
+        }
+    }
+
+    // =====================
     // ゲームタイマー
     // =====================
 

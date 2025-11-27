@@ -272,6 +272,33 @@ function setupGameCallbacks() {
     gameService.onOutsideAreaWarning = (remainingSeconds) => {
         screensUI.updateOutsideWarning(remainingSeconds);
     };
+
+    // 縮小イベント開始
+    gameService.onShrinkStart = () => {
+        eventsUI.addEvent('⚠️ 安全地帯が縮小を開始しました！', EVENT_TYPES.IMPORTANT);
+        mapUI.setAreaShrinkingStyle(true);
+        screensUI.showShrinkWarning(true);
+
+        // Firebaseにイベントを保存（全プレイヤーに共有）
+        firebaseService.addEvent({
+            type: EVENT_TYPES.IMPORTANT,
+            message: '⚠️ 安全地帯が縮小を開始しました！30分かけて縮小します',
+            eventType: 'shrink_start'
+        }).catch(err => console.error('Event save error:', err));
+    };
+
+    // 縮小イベント更新
+    gameService.onShrinkUpdate = (newRadius, remainingTime) => {
+        mapUI.updateAreaRadius(newRadius);
+        screensUI.updateShrinkInfo(newRadius, remainingTime);
+    };
+
+    // 縮小イベント終了
+    gameService.onShrinkEnd = (finalRadius) => {
+        eventsUI.addEvent(`安全地帯の縮小が完了しました（半径${finalRadius}m）`, EVENT_TYPES.IMPORTANT);
+        mapUI.setAreaShrinkingStyle(false);
+        screensUI.showShrinkWarning(false);
+    };
 }
 
 // =====================
@@ -381,6 +408,8 @@ function handleGameStatusChange(data) {
                 screensUI.updateRunnerCountdown(seconds);
             });
             screensUI.startGameTimer(data.endTime);
+            // 縮小イベントの監視を開始
+            gameService.startShrinkEventMonitoring();
             break;
 
         case GAME_STATUS.ENDED:

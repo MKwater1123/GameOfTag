@@ -5,7 +5,7 @@
  * GPS 位置情報の取得と管理
  */
 
-import { GEOLOCATION_OPTIONS, GAME_AREA } from '../config/constants.js';
+import { GEOLOCATION_OPTIONS, GAME_AREA, SHRINK_EVENT } from '../config/constants.js';
 import { calculateDistance, logDebug } from '../utils/helpers.js';
 
 class LocationService {
@@ -17,6 +17,10 @@ class LocationService {
         };
         this.onPositionUpdate = null;
         this.onError = null;
+
+        // 動的半径管理
+        this.currentRadius = GAME_AREA.RADIUS_METER;
+        this.originalRadius = GAME_AREA.RADIUS_METER;
     }
 
     /**
@@ -87,7 +91,32 @@ class LocationService {
             GAME_AREA.CENTER_LNG
         );
 
-        return distance <= GAME_AREA.RADIUS_METER;
+        return distance <= this.currentRadius;
+    }
+
+    /**
+     * 現在のエリア半径を取得
+     * @returns {number} 半径（メートル）
+     */
+    getCurrentRadius() {
+        return this.currentRadius;
+    }
+
+    /**
+     * エリア半径を設定
+     * @param {number} radius - 新しい半径（メートル）
+     */
+    setCurrentRadius(radius) {
+        this.currentRadius = Math.max(radius, SHRINK_EVENT.MIN_RADIUS_METER);
+        logDebug('Location', 'Radius updated', { radius: this.currentRadius });
+    }
+
+    /**
+     * エリア半径を初期値にリセット
+     */
+    resetRadius() {
+        this.currentRadius = this.originalRadius;
+        logDebug('Location', 'Radius reset', { radius: this.currentRadius });
     }
 
     /**

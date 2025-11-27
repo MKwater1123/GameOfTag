@@ -9,7 +9,8 @@ import {
     GAME_STATUS,
     GAME_CONFIG,
     ROLES,
-    SEND_INTERVALS
+    SEND_INTERVALS,
+    SHRINK_EVENT
 } from '../config/constants.js';
 import { generateUniqueId, logDebug } from '../utils/helpers.js';
 import { firebaseService } from './firebase.service.js';
@@ -42,11 +43,19 @@ class GameService {
         this.lastRunnerUpdateTime = 0;
         this.gameTimers = [];
 
+        // 縮小イベント管理
+        this.shrinkTimer = null;
+        this.shrinkStartTime = null;
+        this.isShrinking = false;
+
         // コールバック
         this.onCaptured = null;
         this.onDisqualified = null;
         this.onOutsideAreaWarning = null;
         this.onGameStatusChange = null;
+        this.onShrinkStart = null;
+        this.onShrinkUpdate = null;
+        this.onShrinkEnd = null;
     }
 
     // =====================
@@ -424,6 +433,119 @@ class GameService {
     }
 
     // =====================
+    // 安全地帯縮小イベント
+    // =====================
+
+    /**
+     * 縮小イベントを監視開始
+     */
+    startShrinkEventMonitoring() {
+        if (!this.gameState.endTime) return;
+
+        // 1秒ごとに残り時間をチェック
+        const checkInterval = setInterval(() => {
+            if (!this.isGameActive()) {
+                clearInterval(checkInterval);
+                return;
+            }
+
+            const remaining = this.gameState.endTime - Date.now();
+
+            // 残り1時間になったら縮小開始
+            if (remaining <= SHRINK_EVENT.TRIGGER_REMAINING_MS && !this.isShrinking) {
+                clearInterval(checkInterval);
+                this._startShrinking();
+            }
+        }, 1000);
+
+        this.gameTimers.push(checkInterval);
+        logDebug('Game', 'Shrink event monitoring started');
+    }
+
+    /**
+     * 縮小イベントを開始
+     */
+    _startShrinking() {
+        if (this.isShrinking) return;
+
+        this.isShrinking = true;
+        this.shrinkStartTime = Date.now();
+
+        logDebug('Game', 'Area shrinking started');
+
+        // コールバック呼び出し（開始通知）
+        if (this.onShrinkStart) {
+            this.onShrinkStart();
+        }
+
+        // 毎秒半径を縮小
+        this.shrinkTimer = setInterval(() => {
+            const elapsed = Date.now() - this.shrinkStartTime;
+            const elapsedSeconds = Math.floor(elapsed / 1000);
+
+            // 縮小量を計算
+            const shrinkAmount = elapsedSeconds * SHRINK_EVENT.SHRINK_RATE_PER_SECOND;
+            const originalRadius = locationService.originalRadius;
+            const newRadius = Math.max(
+                originalRadius - shrinkAmount,
+                SHRINK_EVENT.MIN_RADIUS_METER
+            );
+
+            // 半径を更新
+            locationService.setCurrentRadius(newRadius);
+
+            // コールバック呼び出し（更新通知）
+            if (this.onShrinkUpdate) {
+                const remainingShrinkTime = SHRINK_EVENT.DURATION_MS - elapsed;
+                this.onShrinkUpdate(newRadius, remainingShrinkTime);
+            }
+
+            // 30分経過または最小半径に達したら終了
+            if (elapsed >= SHRINK_EVENT.DURATION_MS || newRadius <= SHRINK_EVENT.MIN_RADIUS_METER) {
+                this._stopShrinking();
+            }
+        }, 1000);
+    }
+
+    /**
+     * 縮小イベントを停止
+     */
+    _stopShrinking() {
+        if (this.shrinkTimer) {
+            clearInterval(this.shrinkTimer);
+            this.shrinkTimer = null;
+        }
+
+        this.isShrinking = false;
+        logDebug('Game', 'Area shrinking stopped', {
+            finalRadius: locationService.getCurrentRadius()
+        });
+
+        // コールバック呼び出し（終了通知）
+        if (this.onShrinkEnd) {
+            this.onShrinkEnd(locationService.getCurrentRadius());
+        }
+    }
+
+    /**
+     * 縮小状態かどうか
+     * @returns {boolean}
+     */
+    isShrinkingActive() {
+        return this.isShrinking;
+    }
+
+    /**
+     * 縮小イベントをリセット
+     */
+    resetShrinkEvent() {
+        this._stopShrinking();
+        this.shrinkStartTime = null;
+        locationService.resetRadius();
+        logDebug('Game', 'Shrink event reset');
+    }
+
+    // =====================
     // クリーンアップ
     // =====================
 
@@ -432,6 +554,7 @@ class GameService {
      */
     cleanup() {
         this.stopLocationSending();
+        this.resetShrinkEvent();
 
         if (this.outsideTimer) {
             clearInterval(this.outsideTimer);

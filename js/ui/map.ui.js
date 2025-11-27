@@ -165,6 +165,40 @@ class MapUI {
     isInitialized() {
         return this.map !== null;
     }
+
+    /**
+     * エリア円の半径を更新
+     * @param {number} radius - 新しい半径（メートル）
+     */
+    updateAreaRadius(radius) {
+        if (this.areaCircle) {
+            this.areaCircle.setRadius(radius);
+        }
+    }
+
+    /**
+     * エリア円の色を変更（縮小中は警告色に）
+     * @param {boolean} isShrinking - 縮小中かどうか
+     */
+    setAreaShrinkingStyle(isShrinking) {
+        if (this.areaCircle) {
+            if (isShrinking) {
+                this.areaCircle.setStyle({
+                    color: '#ff0000',
+                    fillColor: '#ff0000',
+                    fillOpacity: 0.25,
+                    weight: 4
+                });
+            } else {
+                this.areaCircle.setStyle({
+                    color: '#ff4b2b',
+                    fillColor: '#ff4b2b',
+                    fillOpacity: 0.15,
+                    weight: 3
+                });
+            }
+        }
+    }
 }
 
 // シングルトンインスタンスをエクスポート

@@ -10,7 +10,8 @@ import {
     GAME_CONFIG,
     ROLES,
     SEND_INTERVALS,
-    SHRINK_EVENT
+    SHRINK_EVENT,
+    ONIFICATION_EVENT
 } from '../config/constants.js';
 import { generateUniqueId, logDebug } from '../utils/helpers.js';
 import { firebaseService } from './firebase.service.js';
@@ -48,6 +49,9 @@ class GameService {
         this.shrinkStartTime = null;
         this.isShrinking = false;
 
+        // 鬼化イベント管理
+        this.onificationTriggered = false;
+
         // コールバック
         this.onCaptured = null;
         this.onDisqualified = null;
@@ -56,6 +60,8 @@ class GameService {
         this.onShrinkStart = null;
         this.onShrinkUpdate = null;
         this.onShrinkEnd = null;
+        this.onOnificationStart = null;
+        this.onBecomeOni = null;
     }
 
     // =====================
@@ -546,6 +552,101 @@ class GameService {
     }
 
     // =====================
+    // 鬼化イベント
+    // =====================
+
+    /**
+     * 鬼化イベントを監視開始
+     */
+    startOnificationEventMonitoring() {
+        if (!this.gameState.endTime) return;
+
+        // 1秒ごとに残り時間をチェック
+        const checkInterval = setInterval(() => {
+            if (!this.isGameActive()) {
+                clearInterval(checkInterval);
+                return;
+            }
+
+            const remaining = this.gameState.endTime - Date.now();
+
+            // 残り30分になったら鬼化イベント発動
+            if (remaining <= ONIFICATION_EVENT.TRIGGER_REMAINING_MS && !this.onificationTriggered) {
+                clearInterval(checkInterval);
+                this._triggerOnification();
+            }
+        }, 1000);
+
+        this.gameTimers.push(checkInterval);
+        logDebug('Game', 'Onification event monitoring started');
+    }
+
+    /**
+     * 鬼化イベントを発動
+     */
+    async _triggerOnification() {
+        if (this.onificationTriggered) return;
+
+        this.onificationTriggered = true;
+        logDebug('Game', 'Onification event triggered');
+
+        // コールバック呼び出し（開始通知）
+        if (this.onOnificationStart) {
+            this.onOnificationStart();
+        }
+
+        try {
+            // 全プレイヤーを取得
+            const players = await firebaseService.getPlayersOnce();
+            if (!players) return;
+
+            const convertedPlayers = [];
+
+            // 確保済み・失格のプレイヤーを鬼に変換
+            for (const [playerId, playerData] of Object.entries(players)) {
+                if (playerData.captured || playerData.disqualified) {
+                    await firebaseService.convertToOni(playerId);
+                    convertedPlayers.push(playerData.username);
+                    logDebug('Game', `Player ${playerData.username} converted to oni`);
+                }
+            }
+
+            logDebug('Game', 'Onification completed', { convertedCount: convertedPlayers.length });
+
+        } catch (error) {
+            console.error('Onification error:', error);
+        }
+    }
+
+    /**
+     * 自分が鬼化されたときの処理
+     */
+    handleBecomeOni() {
+        this.currentUser.role = ROLES.ONI;
+        this.currentUser.captured = false;
+        this.currentUser.capturedBy = null;
+        this.currentUser.disqualified = false;
+
+        logDebug('Game', 'Current user became oni');
+
+        // 位置送信を再開（鬼として）
+        this.stopLocationSending();
+        this._startOniSending();
+
+        if (this.onBecomeOni) {
+            this.onBecomeOni();
+        }
+    }
+
+    /**
+     * 鬼化イベントをリセット
+     */
+    resetOnificationEvent() {
+        this.onificationTriggered = false;
+        logDebug('Game', 'Onification event reset');
+    }
+
+    // =====================
     // クリーンアップ
     // =====================
 
@@ -555,6 +656,7 @@ class GameService {
     cleanup() {
         this.stopLocationSending();
         this.resetShrinkEvent();
+        this.resetOnificationEvent();
 
         if (this.outsideTimer) {
             clearInterval(this.outsideTimer);

@@ -103,6 +103,28 @@ class FirebaseService {
     }
 
     /**
+     * プレイヤーを鬼に変換（鬼化イベント用）
+     * @param {string} playerId - プレイヤーID
+     * @returns {Promise}
+     */
+    convertToOni(playerId) {
+        if (!this.playersRef) return Promise.reject(new Error('Not initialized'));
+
+        return this.playersRef.child(playerId).update({
+            role: 'oni',
+            captured: false,
+            capturedBy: null,
+            capturedAt: null,
+            disqualified: false,
+            disqualifiedReason: null,
+            disqualifiedAt: null,
+            onified: true,
+            onifiedAt: Date.now(),
+            updated_at: Date.now()
+        });
+    }
+
+    /**
      * プレイヤーを削除
      * @param {string} playerId - プレイヤーID
      * @returns {Promise}

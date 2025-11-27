@@ -34,6 +34,11 @@ export const SHRINK_EVENT = {
     MIN_RADIUS_METER: 500                   // 最小半径500m
 };
 
+// 鬼化イベント設定
+export const ONIFICATION_EVENT = {
+    TRIGGER_REMAINING_MS: 30 * 60 * 1000   // 残り30分で発動
+};
+
 // ゲームステータス
 export const GAME_STATUS = {
     WAITING: 'waiting',

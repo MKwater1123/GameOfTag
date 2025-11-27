@@ -281,12 +281,11 @@ function setupGameCallbacks() {
         // 現在の半径を取得
         const currentRadius = locationService.getCurrentRadius();
 
-        // Firebaseにイベントを保存（全プレイヤーに共有）
-        firebaseService.addEvent({
-            type: EVENT_TYPES.IMPORTANT,
-            message: `⚠️ 安全地帯が縮小を開始しました！現在の半径${currentRadius}mから、30分かけて毎秒1mずつ縮小します。最小半径は500mです。`,
-            eventType: 'shrink_start'
-        }).catch(err => console.error('Event save error:', err));
+        // ローカルでイベント表示（Firebaseには保存しない - 全員が同時に検知するため）
+        eventsUI.addEvent(
+            `⚠️ 安全地帯が縮小を開始しました！現在の半径${currentRadius}mから、30分かけて毎秒1mずつ縮小します。最小半径は500mです。`,
+            EVENT_TYPES.IMPORTANT
+        );
     };
 
     // 縮小イベント更新
@@ -300,12 +299,30 @@ function setupGameCallbacks() {
         mapUI.setAreaShrinkingStyle(false);
         screensUI.showShrinkWarning(false);
 
-        // Firebaseにイベントを保存（全プレイヤーに共有）
-        firebaseService.addEvent({
-            type: EVENT_TYPES.IMPORTANT,
-            message: `✅ 安全地帯の縮小が完了しました。現在の安全地帯は半径${finalRadius}mです。`,
-            eventType: 'shrink_end'
-        }).catch(err => console.error('Event save error:', err));
+        // ローカルでイベント表示（Firebaseには保存しない - 全員が同時に検知するため）
+        eventsUI.addEvent(
+            `✅ 安全地帯の縮小が完了しました。現在の安全地帯は半径${finalRadius}mです。`,
+            EVENT_TYPES.IMPORTANT
+        );
+    };
+
+    // 鬼化イベント開始
+    gameService.onOnificationStart = () => {
+        eventsUI.addEvent(
+            `👹 鬼化イベント発動！確保済み・失格のプレイヤーが鬼として復活します！`,
+            EVENT_TYPES.IMPORTANT
+        );
+    };
+
+    // 自分が鬼化された時
+    gameService.onBecomeOni = () => {
+        eventsUI.addEvent(
+            `👹 あなたは鬼になりました！逃走者を捕まえましょう！`,
+            EVENT_TYPES.IMPORTANT
+        );
+        screensUI.updateRoleDisplay(ROLES.ONI);
+        // 確保・失格画面から復帰
+        screensUI.showScreen('map');
     };
 }
 
@@ -318,6 +335,16 @@ function watchPlayers() {
             if (!players) return;
 
             const user = gameService.getCurrentUser();
+
+            // 自分が鬼化されたかチェック
+            if (user.id && players[user.id] && players[user.id].onified) {
+                const myData = players[user.id];
+                // 自分がまだ鬼化処理をしていない場合
+                if ((user.captured || user.disqualified) && myData.role === ROLES.ONI) {
+                    gameService.handleBecomeOni();
+                    return;
+                }
+            }
 
             // 自分が確保されたかチェック
             if (user.id && players[user.id] &&
@@ -418,6 +445,8 @@ function handleGameStatusChange(data) {
             screensUI.startGameTimer(data.endTime);
             // 縮小イベントの監視を開始
             gameService.startShrinkEventMonitoring();
+            // 鬼化イベントの監視を開始
+            gameService.startOnificationEventMonitoring();
             break;
 
         case GAME_STATUS.ENDED:
